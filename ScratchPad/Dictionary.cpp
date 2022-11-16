@@ -220,7 +220,7 @@ fn void PrintDictionary(const Dictionary& dictionary)
 	}
 }
 
-int main()
+void test()
 {
 	Dictionary dictionary = CreateDictionary(sizeof(int), 32);
 	StringLit keyOne = STR_LIT("One");
