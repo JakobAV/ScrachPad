@@ -1,7 +1,8 @@
-#include "Dictionary.cpp"
-#include "JsonParser.cpp"
+#include "SortTiming.cpp"
+
+const float PI = 3.14159f;
 
 int main(int argc, char** argv)
 {
-	TestJsonParser();
+    SortTiming();
 }
