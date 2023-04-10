@@ -7,6 +7,7 @@
 IDXGISwapChain* swapchain;
 ID3D11Device* dev;
 ID3D11DeviceContext* devcon;
+ID3D11RenderTargetView* backbuffer;
 
 void InitD3D(HWND hWnd)
 {
@@ -33,6 +34,24 @@ void InitD3D(HWND hWnd)
                                   &dev,
                                   NULL,
                                   &devcon);
+
+    ID3D11Texture2D* pBackBuffer;
+    swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+
+    dev->CreateRenderTargetView(pBackBuffer, NULL, &backbuffer);
+    pBackBuffer->Release();
+
+    devcon->OMSetRenderTargets(1, &backbuffer, NULL);
+
+    D3D11_VIEWPORT viewport;
+    ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.Width = 800;
+    viewport.Height = 600;
+
+    devcon->RSSetViewports(1, &viewport);
 }
 
 void CleanD3D(void)
@@ -40,13 +59,22 @@ void CleanD3D(void)
     // NOTE: This is a defered release. May cause memory leak of called creating and relaseing
     // multiple swapcains durring program life time. Will get freed early when call calling Flush.
     swapchain->Release();
+    backbuffer->Release();
     dev->Release();
     devcon->Release();
 }
 
+void RenderFrame(void)
+{
+    const FLOAT color[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
+    devcon->ClearRenderTargetView(backbuffer, color);
+
+    swapchain->Present(0, 0);
+}
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch(message)
+    switch (message)
     {
         case WM_DESTROY:
         {
@@ -107,10 +135,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 break;
             }
         }
-        else
-        {
 
-        }
+        RenderFrame();
     }
     
     CleanD3D();
