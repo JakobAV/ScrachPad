@@ -1,8 +1,6 @@
-#include "SortTiming.cpp"
-
-const float PI = 3.14159f;
+#include "D3D11.cpp"
 
 int main(int argc, char** argv)
 {
-    SortTiming();
+    return Go();
 }
