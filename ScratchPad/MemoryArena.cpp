@@ -58,6 +58,11 @@ void ArenaPopTo(MemoryArena* arena, u64 position)
     if(currentSizeAllignedToPageSize + ARENA_DECOMMIT_THRESHOLD <= arena->commitSize)
     {
         u64 sizeToDecommit = arena->commitSize-currentSizeAllignedToPageSize;
+        /*
+        This is so stupid. It is a warning about a using a FEATURE of the Virtual Memory...
+        It is also the whole point of this architecture, allowing us to grow and shrink the physical memory usage
+        while still having the same base pointer and not having to do dome shit with copying or managing allocation blocks.
+        */
 #pragma warning(push)
 #pragma warning(disable : 6250)
         VirtualFree(arena->base + currentSizeAllignedToPageSize, sizeToDecommit, MEM_DECOMMIT);
