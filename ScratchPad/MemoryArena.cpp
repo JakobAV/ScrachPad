@@ -19,9 +19,9 @@ u32 GetPageSize()
 
 MemoryArena* CreateArena(u32 initialCommitSize)
 {
-    // NOTE: Ensure that we "start" the arena at the start of the next cache line
-    static_assert(sizeof(MemoryArena) == 64);
+    static_assert(sizeof(MemoryArena) == 64, "Ensure that we \"start\" the arena at the start of the next cache line");
     MemoryArena* arena = (MemoryArena*)VirtualAlloc(0, ARENA_RESERVE_SIZE, MEM_RESERVE, PAGE_NOACCESS);
+    assert(arena != nullptr);
     u32 granularity = GetPageSize();
     u32 actualSize = initialCommitSize + sizeof(MemoryArena) + granularity - 1;
     actualSize -= actualSize%granularity;
@@ -58,7 +58,10 @@ void ArenaPopTo(MemoryArena* arena, u64 position)
     if(currentSizeAllignedToPageSize + ARENA_DECOMMIT_THRESHOLD <= arena->commitSize)
     {
         u64 sizeToDecommit = arena->commitSize-currentSizeAllignedToPageSize;
+#pragma warning(push)
+#pragma warning(disable : 6250)
         VirtualFree(arena->base + currentSizeAllignedToPageSize, sizeToDecommit, MEM_DECOMMIT);
+#pragma warning(pop)
         arena->commitSize -= sizeToDecommit;
     }
 }
