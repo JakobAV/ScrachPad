@@ -71,9 +71,11 @@ TempMemory BeginTempMemory(MemoryArena* arena)
     return result;
 }
 
-void EndTempMemory(TempMemory tempMemory)
+void EndTempMemory(TempMemory* tempMemory)
 {
-    ArenaPopTo(tempMemory.arena, tempMemory.startPos);
+    ArenaPopTo(tempMemory->arena, tempMemory->startPos);
+    tempMemory->arena = nullptr;
+    tempMemory->startPos = 0;
 }
 
 void FreeArena(MemoryArena* arena)
@@ -86,18 +88,21 @@ void TestMemoryArena()
     MemoryArena* arena = CreateArena();
     int* num1 = PushType(arena, int);
     *num1 = 1;
+    UseTempMemory(arena)
+    {
+        float* array2 = PushArray(arena, float, KB(1));
+        for (int i = 0; i < KB(1); ++i)
+        {
+            array2[i] = i + 0.1f;
+        }
+    }
     TempMemory block = BeginTempMemory(arena);
     int* array1 = PushArray(arena, int, MB(1));
     for (int i = 0; i < MB(1); ++i)
     {
         array1[i] = i;
     }
-    EndTempMemory(block);
-    float* array2 = PushArray(arena, float, KB(1));
-    for (int i = 0; i < KB(1); ++i)
-    {
-        array2[i] = i + 0.1f;
-    }
+    EndTempMemory(&block);
 
     FreeArena(arena);
 }

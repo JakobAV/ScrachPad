@@ -17,6 +17,7 @@ struct TempMemory
 
 #define PushType(arena, type) (type*)ArenaPush(arena, sizeof(type))
 #define PushArray(arena, type, count) (type*)ArenaPush(arena, sizeof(type) * count)
+#define UseTempMemory(arena) for (TempMemory _block_ = BeginTempMemory(arena); _block_.arena!=nullptr; EndTempMemory(&_block_))
 
 MemoryArena* CreateArena(u32 initialCommitSize = 0);
 void* ArenaPush(MemoryArena* arena, u32 size);
