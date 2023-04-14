@@ -1,3 +1,4 @@
+#include "MemoryArena.h"
 #include "Shared.h"
 #include <windows.h>
 #include <cassert>
@@ -5,21 +6,9 @@
 #ifndef ARENA_RESERVE_SIZE 
 #define ARENA_RESERVE_SIZE GB(4)
 #endif
-
-struct MemoryArena
-{
-    u8* base;
-    u64 currentSize;
-    u64 commitSize;
-    u64 _unused[5];
-};
-
-
-struct TempMemory
-{
-    MemoryArena* arena;
-    u64 startPos;
-};
+#ifndef ARENA_DECOMMIT_THRESHOLD
+#define ARENA_DECOMMIT_THRESHOLD MB(4)
+#endif
 
 u32 GetPageSize()
 {
@@ -28,12 +17,13 @@ u32 GetPageSize()
     return info.dwPageSize;
 }
 
-MemoryArena* InitArena(u32 size = 0)
+MemoryArena* CreateArena(u32 initialCommitSize)
 {
+    // NOTE: Ensure that we "start" the arena at the start of the next cache line
     static_assert(sizeof(MemoryArena) == 64);
     MemoryArena* arena = (MemoryArena*)VirtualAlloc(0, ARENA_RESERVE_SIZE, MEM_RESERVE, PAGE_NOACCESS);
     u32 granularity = GetPageSize();
-    u32 actualSize = size + sizeof(MemoryArena) + granularity - 1;
+    u32 actualSize = initialCommitSize + sizeof(MemoryArena) + granularity - 1;
     actualSize -= actualSize%granularity;
     VirtualAlloc(arena, actualSize, MEM_COMMIT, PAGE_READWRITE);
     arena->base = (u8*)arena;
@@ -42,11 +32,9 @@ MemoryArena* InitArena(u32 size = 0)
     return arena;
 }
 
-#define PushType(arena, type) (type*)ArenaPush(arena, sizeof(type))
-#define PushArray(arena, type, count) (type*)ArenaPush(arena, sizeof(type) * count)
-
 void* ArenaPush(MemoryArena* arena, u32 size)
 {
+    //TODO: Add suport for aligning memory
     if(arena->currentSize + size > arena->commitSize)
     {
         u32 granularity = GetPageSize();
@@ -63,8 +51,16 @@ void* ArenaPush(MemoryArena* arena, u32 size)
 
 void ArenaPopTo(MemoryArena* arena, u64 position)
 {
-    // TODO: De-commit memory if commitSize - currentSize > 4x PageSize.
     arena->currentSize = position;
+    u32 pageSize = GetPageSize();
+    u64 currentSizeAllignedToPageSize = arena->currentSize + pageSize -1;
+    currentSizeAllignedToPageSize -= currentSizeAllignedToPageSize % pageSize;
+    if(currentSizeAllignedToPageSize + ARENA_DECOMMIT_THRESHOLD <= arena->commitSize)
+    {
+        u64 sizeToDecommit = arena->commitSize-currentSizeAllignedToPageSize;
+        VirtualFree(arena->base + currentSizeAllignedToPageSize, sizeToDecommit, MEM_DECOMMIT);
+        arena->commitSize -= sizeToDecommit;
+    }
 }
 
 TempMemory BeginTempMemory(MemoryArena* arena)
@@ -87,7 +83,7 @@ void FreeArena(MemoryArena* arena)
 
 void TestMemoryArena()
 {
-    MemoryArena* arena = InitArena();
+    MemoryArena* arena = CreateArena();
     int* num1 = PushType(arena, int);
     *num1 = 1;
     TempMemory block = BeginTempMemory(arena);
@@ -98,7 +94,7 @@ void TestMemoryArena()
     }
     EndTempMemory(block);
     float* array2 = PushArray(arena, float, KB(1));
-    for (int i = 0; i < MB(1); ++i)
+    for (int i = 0; i < KB(1); ++i)
     {
         array2[i] = i + 0.1f;
     }
