@@ -48,6 +48,11 @@ void* ArenaPush(MemoryArena* arena, u32 size)
     arena->currentSize += size;
     return result;
 }
+void ArenaPop(MemoryArena* arena, u32 size)
+{
+    assert(arena->currentSize > size + sizeof(MemoryArena));
+    ArenaPopTo(arena, arena->currentSize - size);
+}
 
 void ArenaPopTo(MemoryArena* arena, u64 position)
 {
@@ -84,6 +89,11 @@ void EndTempMemory(TempMemory* tempMemory)
     ArenaPopTo(tempMemory->arena, tempMemory->startPos);
     tempMemory->arena = nullptr;
     tempMemory->startPos = 0;
+}
+
+void ArenaClear(MemoryArena* arena)
+{
+    ArenaPopTo(arena, sizeof(MemoryArena));
 }
 
 void FreeArena(MemoryArena* arena)
