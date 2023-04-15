@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "MemoryArena.h"
+#include "Shared.h"
 
 struct Tokenizer
 {
-	int length;
-	char* data;
-	int at;
+    u8* data;
+    u32 length;
+	u32 at;
 };
 
 enum TokenType
@@ -28,11 +30,26 @@ enum TokenType
 struct Token
 {
 	TokenType type;
-	char* data;
-	int length;
+	u8* data;
+	u32 length;
 };
 
-char* ReadEntireFile(const char* fileName, int& bytesRead)
+enum JsonNodeType
+{
+    JsonNodeType_Null,
+    JsonNodeType_Object,
+    JsonNodeType_Array,
+    JsonNodeType_String,
+    JsonNodeType_Number,
+    JsonNodeType_Boolean,
+}
+
+struct JsonNode
+{
+    
+};
+
+u8* ReadEntireFile(const char* fileName, int& bytesRead)
 {
 	FILE* fileHandle;
 	fopen_s(&fileHandle, fileName, "r");
@@ -52,7 +69,7 @@ char* ReadEntireFile(const char* fileName, int& bytesRead)
 		return nullptr;
 	}
 	fseek(fileHandle, 0, SEEK_SET);
-	char* buffer = (char*)malloc(fileSize);
+	u8* buffer = (u8*)malloc(fileSize);
 	if (buffer == 0)
 	{
 		fclose(fileHandle);
@@ -63,7 +80,7 @@ char* ReadEntireFile(const char* fileName, int& bytesRead)
 	return buffer;
 }
 
-bool IsNumber(char c)
+bool IsNumber(u8 c)
 {
 	if (c >= '0' && c <= '9')
 	{
@@ -76,7 +93,7 @@ void EatWhiteSpace(Tokenizer& tokenizer)
 {
 	while (true)
 	{
-		char c = tokenizer.data[tokenizer.at];
+		u8 c = tokenizer.data[tokenizer.at];
 		if (c != ' ' && c != '\n' && c != '\r' && c != '\t')
 		{
 			return;
@@ -88,7 +105,7 @@ void EatWhiteSpace(Tokenizer& tokenizer)
 Token GetToken(Tokenizer& tokenizer)
 {
 	EatWhiteSpace(tokenizer);
-	char c = tokenizer.data[tokenizer.at];
+	u8 c = tokenizer.data[tokenizer.at];
 	Token token = {};
 	token.data = tokenizer.data + tokenizer.at;
 	token.length = 1;
@@ -107,7 +124,7 @@ Token GetToken(Tokenizer& tokenizer)
 		token.type = TokenType_String;
 		token.data = tokenizer.data + tokenizer.at;
 
-		int length = 0;
+		u32 length = 0;
 		while (true)
 		{
 			c = tokenizer.data[tokenizer.at];
