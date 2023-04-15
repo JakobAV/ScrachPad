@@ -91,6 +91,11 @@ void EndTempMemory(TempMemory* tempMemory)
     tempMemory->startPos = 0;
 }
 
+u8* ArenaGetCurrentPos(MemoryArena* arena)
+{
+    return arena->base + arena->currentSize;
+}
+
 void ArenaClear(MemoryArena* arena)
 {
     ArenaPopTo(arena, sizeof(MemoryArena));

@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 
 typedef unsigned char       u8;
 typedef unsigned short      u16;
@@ -13,6 +14,12 @@ typedef signed long long    s64;
 typedef float f32;
 typedef double f64;
 
+struct StringLit
+{
+    u8* str;
+    u32 length;
+};
+
 #define ArrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define KB(n) (n << 10)
@@ -23,3 +30,5 @@ typedef double f64;
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) < (b) ? (b) : (a)
 #define clamp(v, minimum, maximum) (max(min(v, minimum), maximum))
+
+#define InvalidCodePath assert(false)
