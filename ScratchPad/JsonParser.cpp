@@ -81,6 +81,8 @@ struct JsonDocument
     JObject root;
 };
 
+// TODO: Add functions for getting the values by string
+
 JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena);
 JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena);
 StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena);
