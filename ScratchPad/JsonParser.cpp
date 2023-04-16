@@ -171,6 +171,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
             if (tokenizer.at[0] == 'r' && tokenizer.at[1] == 'u' && tokenizer.at[2] == 'e')
             {
                 token.type = TokenType_True;
+                tokenizer.at += 3;
             }
             else
             {
@@ -182,6 +183,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
             if (tokenizer.at[0] == 'a' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 's' && tokenizer.at[3] == 'e')
             {
                 token.type = TokenType_False;
+                tokenizer.at += 4;
             }
             else
             {
@@ -193,6 +195,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
             if (tokenizer.at[0] == 'u' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 'l')
             {
                 token.type = TokenType_Null;
+                tokenizer.at += 3;
             }
             else
             {
@@ -223,6 +226,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         {
             if (c == '-' || IsNumber(c))
             {
+                token.type = TokenType_Number;
                 c = *tokenizer.at;
                 while (IsNumber(c) || c == '.')
                 {
@@ -282,7 +286,9 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     {
         if (fractionNumber > 0)
         {
-            fraction += CharToNumber(token.data[i]) * pow(0.1, fractionNumber);
+            fraction *= 10;
+            fraction += CharToNumber(token.data[i]);
+            ++fractionNumber;
         }
         else if (token.data[i] == '.' && i > (isNegative ?1:0))
         {
@@ -294,6 +300,7 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
             baseNumber += CharToNumber(token.data[i]);
         }
     }
+    fraction *= pow(0.1, fractionNumber-1);
     number = baseNumber + fraction;
     return number;
 }
@@ -326,7 +333,7 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
             break;
         case TokenType_OpenBracket:
             node.type = JsonNodeType_Array;
-            node.object = ParseJObject(tokenizer, arena);
+            node.array = ParseJArray(tokenizer, arena);
             break;
         case TokenType_False:
         case TokenType_True:
@@ -357,7 +364,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
         Token token = GetToken(tokenizer);
         switch (token.type)
         {
-            case TokenType_CloseBracket:
+            case TokenType_CloseBrace:
                 endOfObject = true;
                 break;
             case TokenType_Comma:
@@ -378,7 +385,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
     obj.length = numberOfNodes;
     obj.values = PushArray(arena, JsonNode, numberOfNodes);
     memcpy_s(obj.values, numberOfNodes * sizeof(JsonNode), startPos, numberOfNodes * sizeof(JsonNode));
-    EndTempMemory(block);
+    EndTempMemory(&block);
     return obj;
 }
 
@@ -481,7 +488,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     arr.length = numberOfElements;
     arr.values = PushArray(arena, u8, dataToCopy);
     memcpy_s(arr.values, dataToCopy, startPos, dataToCopy);
-    EndTempMemory(block);
+    EndTempMemory(&block);
     return arr;
 }
 
@@ -489,10 +496,11 @@ JsonDocument CreateJsonDocument(u8* fileData, u32 length)
 {
     Tokenizer tokenizer = {};
     tokenizer.data = fileData;
+    tokenizer.at = fileData;
     tokenizer.length = length;
 
     JsonDocument doc = {};
-    if (!RequireToken(&tokenizer, TokenType_OpenBracket))
+    if (!RequireToken(&tokenizer, TokenType_OpenBrace))
     {
         InvalidCodePath;
         return doc;
@@ -511,7 +519,7 @@ void FreeJsonDocument(JsonDocument doc)
 void TestJsonParser()
 {
     u32 length = 0;
-    u8* data = ReadEntireFile("C:\\Users\\jakob.persson\\OneDrive - Academedia\\Finished\\CPP-DeepDive\\Uppgift-03-DataDriveGame\\exe\\settings\\GameSettings.json", length);
+    u8* data = ReadEntireFile("Test.json", length);
 
     JsonDocument doc = CreateJsonDocument(data, length);
 

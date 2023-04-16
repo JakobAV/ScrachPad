@@ -29,5 +29,5 @@ void ArenaPopTo(MemoryArena* arena, u64 position);
 void ArenaClear(MemoryArena* arena);
 u8* ArenaGetCurrentPos(MemoryArena* arena);
 TempMemory BeginTempMemory(MemoryArena* arena);
-void EndTempMemory(TempMemory tempMemory);
+void EndTempMemory(TempMemory* tempMemory);
 void FreeArena(MemoryArena* arena);

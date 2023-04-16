@@ -1,0 +1,15 @@
+{
+    "largeFractionNumber": 9.999999999
+    "boolTrue": true,
+    "boolFalse": false,
+    "boolArray": [true,false,false,true],
+    "objectArray": [{"n": 1},{"n": 1.5}],
+    "null": null,
+    "string": "testing",
+    "object": {
+        "one": "t",
+        "two": 2,
+        "three": {"four": false}
+    },
+    "largeNumber": 9999999999,
+}
