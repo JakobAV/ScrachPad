@@ -16,9 +16,10 @@ typedef double f64;
 
 struct StringLit
 {
-    u8* str;
     u32 length;
+    const char* text;
 };
+#define STR_LIT(text) StringLit{sizeof(text)-1, text}
 
 #define ArrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
 

@@ -263,9 +263,9 @@ StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
     StringLit result = {};
     result.length = token.length;
-    result.str = PushArray(arena, u8, token.length + 1);
-    memcpy_s(result.str, token.length + 1, token.data, token.length);
-    result.str[token.length] = '\0';
+    result.text = PushArray(arena, char, token.length + 1);
+    memcpy_s((u8*)result.text, token.length + 1, token.data, token.length);
+    ((u8*)result.text)[token.length] = '\0';
     return result;
 }
 
@@ -514,6 +514,77 @@ JsonDocument CreateJsonDocument(u8* fileData, u32 length)
 void FreeJsonDocument(JsonDocument doc)
 {
     FreeArena(doc.arena);
+}
+
+JsonNode* JsonGetNode(JObject* obj, const char* name)
+{
+    for(u32 i = 0; i < obj->length; ++i)
+    {
+        if(strncmp(obj->values[i].name.text, name, obj->values[i].name.length))
+        {
+            return obj->values + i;
+        }
+    }
+    return nullptr;
+}
+
+JObject* JsonGetObject(JsonNode* node)
+{
+    if(node->type == JsonNodeType_Object)
+    {
+        return &node->object;
+    }
+    return nullptr;
+}
+
+f64 JsonGetDouble(JsonNode* node)
+{
+    if(node->type == JsonNodeType_Number)
+    {
+        return node->number;
+    }
+    return (f64)0xFFFFFFFFFFFFFFFF;
+}
+
+f32 JsonGetFloat(JsonNode* node)
+{
+    return static_cast<f32>(JsonGetDouble(node));
+}
+
+s32 JsonGetInt(JsonNode* node)
+{
+    return static_cast<s32>(JsonGetDouble(node));
+}
+
+s64 JsonGetLong(JsonNode* node)
+{
+    return static_cast<s32>(JsonGetDouble(node));
+}
+
+bool* JsonGetBoolArray(JsonNode* node, u32* size)
+{
+    // TODO: Add something with array type so that it is clearer what values the array can contain
+    if(node->type == JsonNodeType_Array)
+    {
+        size = node->array.length;
+        return reinterpret_cast<T*>(node->array.values);
+    }
+    size = 0;
+    return nullptr;
+}
+
+StringLit JsonGetString(JsonNode* node)
+{
+    if(node->type == JsonNodeType_String)
+    {
+        return node->string
+    }
+    return {nullptr, 0};
+}
+
+bool JsonIsNull(JsonNode* node)
+{
+    return node->type == JsonNodeType_Null;
 }
 
 void TestJsonParser()

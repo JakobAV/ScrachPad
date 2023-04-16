@@ -1,16 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "Shared.h"
 
 #define fn static
 #define assert(condition) if(!(condition)) { *((int*)0) = 0;}
-
-struct StringLit
-{
-	unsigned int length;
-	const char* text;
-};
-
-#define STR_LIT(text) StringLit{sizeof(text)-1, text}
 
 struct DictionaryKey
 {
