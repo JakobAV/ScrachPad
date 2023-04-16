@@ -518,9 +518,9 @@ void FreeJsonDocument(JsonDocument doc)
 
 JsonNode* JsonGetNode(JObject* obj, const char* name)
 {
-    for(u32 i = 0; i < obj->length; ++i)
+    for (u32 i = 0; i < obj->length; ++i)
     {
-        if(strncmp(obj->values[i].name.text, name, obj->values[i].name.length))
+        if (strncmp(obj->values[i].name.text, name, obj->values[i].name.length) == 0)
         {
             return obj->values + i;
         }
@@ -530,7 +530,7 @@ JsonNode* JsonGetNode(JObject* obj, const char* name)
 
 JObject* JsonGetObject(JsonNode* node)
 {
-    if(node->type == JsonNodeType_Object)
+    if (node->type == JsonNodeType_Object)
     {
         return &node->object;
     }
@@ -539,7 +539,7 @@ JObject* JsonGetObject(JsonNode* node)
 
 f64 JsonGetDouble(JsonNode* node)
 {
-    if(node->type == JsonNodeType_Number)
+    if (node->type == JsonNodeType_Number)
     {
         return node->number;
     }
@@ -558,33 +558,105 @@ s32 JsonGetInt(JsonNode* node)
 
 s64 JsonGetLong(JsonNode* node)
 {
-    return static_cast<s32>(JsonGetDouble(node));
-}
-
-bool* JsonGetBoolArray(JsonNode* node, u32* size)
-{
-    // TODO: Add something with array type so that it is clearer what values the array can contain
-    if(node->type == JsonNodeType_Array)
-    {
-        size = node->array.length;
-        return reinterpret_cast<T*>(node->array.values);
-    }
-    size = 0;
-    return nullptr;
+    return static_cast<s64>(JsonGetDouble(node));
 }
 
 StringLit JsonGetString(JsonNode* node)
 {
-    if(node->type == JsonNodeType_String)
+    if (node->type == JsonNodeType_String)
     {
-        return node->string
+        return node->string;
     }
-    return {nullptr, 0};
+    return StringLit { 0, nullptr };
 }
+
+bool JsonGetBool(JsonNode* node)
+{
+    if (node->type == JsonNodeType_Boolean)
+    {
+        return node->booleanValue;
+    }
+    return false;
+}
+
+JsonNodeType JsonGetType(JsonNode* node)
+{
+    return node->type;
+}
+
+JsonNodeType JsonGetArrayType(JsonNode* node)
+{
+    if (node->type == JsonNodeType_Array)
+    {
+        return node->array.arrayType;
+    }
+    return JsonNodeType_Null;
+}
+
+bool* JsonGetBoolArray(JsonNode* node, u32* size)
+{
+    if (node->type == JsonNodeType_Array && node->array.arrayType == JsonNodeType_Boolean)
+    {
+        *size = node->array.length;
+        return reinterpret_cast<bool*>(node->array.values);
+    }
+    *size = 0;
+    return nullptr;
+}
+
+f64* JsonGetNumberArray(JsonNode* node, u32* size)
+{
+    if (node->type == JsonNodeType_Array && node->array.arrayType == JsonNodeType_Number)
+    {
+        *size = node->array.length;
+        return reinterpret_cast<f64*>(node->array.values);
+    }
+    *size = 0;
+    return nullptr;
+}
+
+StringLit* JsonGetStringArray(JsonNode* node, u32* size)
+{
+    if (node->type == JsonNodeType_Array && node->array.arrayType == JsonNodeType_String)
+    {
+        *size = node->array.length;
+        return reinterpret_cast<StringLit*>(node->array.values);
+    }
+    *size = 0;
+    return nullptr;
+}
+
+JObject* JsonGetObjectArray(JsonNode* node, u32* size)
+{
+    if (node->type == JsonNodeType_Array && node->array.arrayType == JsonNodeType_Object)
+    {
+        *size = node->array.length;
+        return reinterpret_cast<JObject*>(node->array.values);
+    }
+    *size = 0;
+    return nullptr;
+}
+
+JArray* JsonGetArrayArray(JsonNode* node, u32* size)
+{
+    if (node->type == JsonNodeType_Array && node->array.arrayType == JsonNodeType_Array)
+    {
+        *size = node->array.length;
+        return reinterpret_cast<JArray*>(node->array.values);
+    }
+    *size = 0;
+    return nullptr;
+}
+
 
 bool JsonIsNull(JsonNode* node)
 {
     return node->type == JsonNodeType_Null;
+}
+
+void JsonSerialize(JsonDocument doc)
+{
+    NotImplemented;
 }
 
 void TestJsonParser()
@@ -593,6 +665,40 @@ void TestJsonParser()
     u8* data = ReadEntireFile("Test.json", length);
 
     JsonDocument doc = CreateJsonDocument(data, length);
-
+    auto largeFractionNumber = JsonGetDouble(JsonGetNode(&doc.root, "largeFractionNumber"));
+    auto boolTrue = JsonGetBool(JsonGetNode(&doc.root, "boolTrue"));
+    auto boolFalse = JsonGetBool(JsonGetNode(&doc.root, "boolFalse"));
+    u32 boolArraySize = 0;
+    auto* boolArray = JsonGetBoolArray(JsonGetNode(&doc.root, "boolArray"), &boolArraySize);
+    u32 objectArraySize = 0;
+    auto* objectArray = JsonGetObjectArray(JsonGetNode(&doc.root, "objectArray"), &objectArraySize);
+    auto isNull = JsonIsNull(JsonGetNode(&doc.root, "null"));
+    auto string = JsonGetString(JsonGetNode(&doc.root, "string"));
+    auto* object = JsonGetObject(JsonGetNode(&doc.root, "object"));
+    auto largeNumber = JsonGetLong(JsonGetNode(&doc.root, "largeNumber"));
+    for (u32 i = 0; i < boolArraySize; ++i)
+    {
+        if (boolArray[i])
+        {
+            boolArray;
+        }
+    }
+    f32 sum = 0.0f;
+    for (u32 i = 0; i < objectArraySize; ++i)
+    {
+        for (u32 j = 0; j < objectArray[i].length; ++j)
+        {
+            JsonNode* node = objectArray[i].values + j;
+            switch (node->type)
+            {
+                case JsonNodeType_Array: {} break;
+                case JsonNodeType_Object: {} break;
+                case JsonNodeType_String: {} break;
+                case JsonNodeType_Number: { sum += JsonGetFloat(node); } break;
+                case JsonNodeType_Null: {} break;
+                default: { InvalidCodePath; } break;
+            }
+        }
+    }
     FreeJsonDocument(doc);
 }

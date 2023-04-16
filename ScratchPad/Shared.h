@@ -33,3 +33,4 @@ struct StringLit
 #define clamp(v, minimum, maximum) (max(min(v, minimum), maximum))
 
 #define InvalidCodePath assert(false)
+#define NotImplemented assert(false)
