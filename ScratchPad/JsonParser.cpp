@@ -43,7 +43,7 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
 
 MemoryArena* GetTempArena()
 {
-    static MemoryArena* tempArena = CreateArena();
+    static MemoryArena* tempArena = CreateArena(0, 0);
     return tempArena;
 }
 

@@ -6,7 +6,9 @@ struct MemoryArena
     u8* base;
     u64 currentSize;
     u64 commitSize;
-    u64 _unused[5]; // To make the struct 64 bytes (one cache line)
+    u32 pageSize;
+    u32 arenaDecomitThreshold;
+    u64 _unused[4]; // To make the struct 64 bytes (one cache line)
 };
 
 
@@ -22,7 +24,7 @@ struct TempMemory
 #define PopArray(arena, type, count) ArenaPop(arena, sizeof(type) * count)
 #define UseTempMemory(arena) for (TempMemory _block_ = BeginTempMemory(arena); _block_.arena!=nullptr; EndTempMemory(&_block_))
 
-MemoryArena* CreateArena(u32 initialCommitSize = 0);
+MemoryArena* CreateArena(u32 initialCommitSize = 0, u32 decommitThresholdInPageSizes = 4);
 void* ArenaPush(MemoryArena* arena, u32 size);
 void ArenaPop(MemoryArena* arena, u32 size);
 void ArenaPopTo(MemoryArena* arena, u64 position);

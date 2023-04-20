@@ -3,11 +3,8 @@
 #include <windows.h>
 #include <cassert>
 
-#ifndef ARENA_RESERVE_SIZE 
+#ifndef ARENA_RESERVE_SIZE
 #define ARENA_RESERVE_SIZE GB(4)
-#endif
-#ifndef ARENA_DECOMMIT_THRESHOLD
-#define ARENA_DECOMMIT_THRESHOLD MB(4)
 #endif
 
 u32 GetPageSize()
@@ -17,29 +14,31 @@ u32 GetPageSize()
     return info.dwPageSize;
 }
 
-MemoryArena* CreateArena(u32 initialCommitSize)
+MemoryArena* CreateArena(u32 initialCommitSize, u32 decommitThresholdInPageSizes)
 {
     static_assert(sizeof(MemoryArena) == 64, "Ensure that we \"start\" the arena at the start of the next cache line");
     MemoryArena* arena = (MemoryArena*)VirtualAlloc(0, ARENA_RESERVE_SIZE, MEM_RESERVE, PAGE_NOACCESS);
     assert(arena != nullptr);
     u32 granularity = GetPageSize();
     u32 actualSize = initialCommitSize + sizeof(MemoryArena) + granularity - 1;
-    actualSize -= actualSize%granularity;
+    actualSize -= actualSize % granularity;
     VirtualAlloc(arena, actualSize, MEM_COMMIT, PAGE_READWRITE);
     arena->base = (u8*)arena;
     arena->currentSize = sizeof(MemoryArena);
     arena->commitSize = actualSize;
+    arena->pageSize = granularity;
+    arena->arenaDecomitThreshold = granularity * decommitThresholdInPageSizes;
     return arena;
 }
 
 void* ArenaPush(MemoryArena* arena, u32 size)
 {
     //TODO: Add suport for aligning memory
-    if(arena->currentSize + size > arena->commitSize)
+    if (arena->currentSize + size > arena->commitSize)
     {
-        u32 granularity = GetPageSize();
+        u32 granularity = arena->pageSize;
         u32 actualSize = size + granularity - 1;
-        actualSize -= actualSize%granularity;
+        actualSize -= actualSize % granularity;
         assert(arena->commitSize + actualSize <= ARENA_RESERVE_SIZE);
         VirtualAlloc(arena->base + arena->commitSize, actualSize, MEM_COMMIT, PAGE_READWRITE);
         arena->commitSize += actualSize;
@@ -57,10 +56,15 @@ void ArenaPop(MemoryArena* arena, u32 size)
 void ArenaPopTo(MemoryArena* arena, u64 position)
 {
     arena->currentSize = position;
-    u32 pageSize = GetPageSize();
+
+    if (arena->arenaDecomitThreshold == 0)
+    {
+        return;
+    }
+    u32 pageSize = arena->pageSize;
     u64 currentSizeAllignedToPageSize = arena->currentSize + pageSize -1;
     currentSizeAllignedToPageSize -= currentSizeAllignedToPageSize % pageSize;
-    if(currentSizeAllignedToPageSize + ARENA_DECOMMIT_THRESHOLD <= arena->commitSize)
+    if (currentSizeAllignedToPageSize + arena->arenaDecomitThreshold <= arena->commitSize)
     {
         u64 sizeToDecommit = arena->commitSize-currentSizeAllignedToPageSize;
         /*

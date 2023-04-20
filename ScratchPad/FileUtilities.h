@@ -1,5 +1,7 @@
 #pragma once
 #include <stdio.h>
+#include <stdlib.h>
+#include "Shared.h"
 
 
 static u8* ReadEntireFile(const char* fileName, u32& bytesRead)
