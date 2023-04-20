@@ -47,37 +47,6 @@ MemoryArena* GetTempArena()
     return tempArena;
 }
 
-u8* ReadEntireFile(const char* fileName, u32& bytesRead)
-{
-    FILE* fileHandle;
-    fopen_s(&fileHandle, fileName, "r");
-    if (fileHandle == nullptr)
-    {
-        return nullptr;
-    }
-    if (fseek(fileHandle, 0, SEEK_END) != 0)
-    {
-        fclose(fileHandle);
-        return nullptr;
-    }
-    int fileSize = ftell(fileHandle);
-    if (fileSize == 0)
-    {
-        fclose(fileHandle);
-        return nullptr;
-    }
-    fseek(fileHandle, 0, SEEK_SET);
-    u8* buffer = (u8*)malloc(fileSize);
-    if (buffer == 0)
-    {
-        fclose(fileHandle);
-        return nullptr;
-    }
-    bytesRead = (u32)fread_s(buffer, fileSize, sizeof(char), fileSize, fileHandle);
-    fclose(fileHandle);
-    return buffer;
-}
-
 bool IsNumber(u8 c)
 {
     if (c >= '0' && c <= '9')
@@ -406,7 +375,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 break;
             case TokenType_String:
             {
-                assert(arr.arrayType == TokenType_String);
+                assert(arr.arrayType == JsonNodeType_String);
                 StringLit* str = PushType(tempArena, StringLit);
                 *str = ParseString(token, tokenizer, arena);
                 numberOfElements += 1;
@@ -414,7 +383,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             }
             case TokenType_Number:
             {
-                assert(arr.arrayType == TokenType_Number);
+                assert(arr.arrayType == JsonNodeType_Number);
                 f64* node = PushType(tempArena, f64);
                 *node = ParseNumber(token, tokenizer, arena);
                 numberOfElements += 1;
@@ -473,7 +442,10 @@ JsonDocument CreateJsonDocument(u8* fileData, u32 length)
         return doc;
     }
     doc.arena = CreateArena();
-    doc.root = ParseJObject(&tokenizer, doc.arena);
+    doc.root = PushType(doc.arena, JsonNode);
+    doc.root->type = JsonNodeType_Object;
+    doc.root->name = { 0, nullptr };
+    doc.root->object = ParseJObject(&tokenizer, doc.arena);
 
     return doc;
 }
@@ -626,13 +598,10 @@ void JsonSerialize(JsonDocument doc)
     NotImplemented;
 }
 
-void TestJsonParser()
+void TestJsonParser(u8* data, u32 length)
 {
-    u32 length = 0;
-    u8* data = ReadEntireFile("Test.json", length);
-
     JsonDocument doc = CreateJsonDocument(data, length);
     u32 size = 0;
-    JObject* test = JsonGetObjectArray(JsonGetNode(&doc.root, "enemyFairy"), &size);
+    JObject* test = JsonGetObjectArray(JsonGetNode(&doc.root->object, "enemyFairy"), &size);
     FreeJsonDocument(doc);
 }

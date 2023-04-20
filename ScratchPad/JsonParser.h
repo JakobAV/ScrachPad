@@ -1,3 +1,4 @@
+#pragma once
 #include "MemoryArena.h"
 #include "Shared.h"
 
@@ -44,7 +45,7 @@ struct JsonNode
 struct JsonDocument
 {
     MemoryArena* arena;
-    JObject root;
+    JsonNode* root;
 };
 
 JsonDocument CreateJsonDocument(u8* fileData, u32 length);

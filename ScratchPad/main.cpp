@@ -3,8 +3,22 @@
 //#include "Dictionary.cpp"
 //#include "SortTiming.cpp"
 #include "MemoryArena.cpp"
+#include "JsonWrapper.cpp"
+#include "FileUtilities.h"
 
 int main(int argc, char** argv)
 {
-    TestJsonParser();
+    u32 length = 0;
+    u8* data = ReadEntireFile("Test.json", length);
+    //for (u32 i = 0; i < 10; ++i)
+    //{
+        TestJsonParser(data, length);
+    //}
+
+    JJson::JsonWrapper doc(data, length);
+    free(data);
+    JJson::Json object = doc.GetRoot();
+    JJson::Json fairyArray = object["enemyFairy"];
+    JJson::Json fairy = fairyArray[0];
+    JJson::ArrayView<f64> numbers = object["Untagged"].GetNumberArray();
 }
