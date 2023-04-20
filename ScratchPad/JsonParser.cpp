@@ -198,6 +198,7 @@ inline u8 CharToNumber(u8 c)
 f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
     f64 number;
+#if 1
     assert(token.type == TokenType_Number);
     bool isNegative = token.data[0] == '-';
     u64 baseNumber = 0;
@@ -223,6 +224,10 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     }
     fraction *= pow(0.1, fractionNumber-1);
     number = baseNumber + fraction;
+#else
+    // Slower, but probably more correct
+    number = (f64)strtod((const char*)token.data, 0);
+#endif
     return number;
 }
 
