@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "MemoryArena.h"
+#include "JsonParser.h"
 #include "Shared.h"
 
 struct Tokenizer
@@ -34,54 +34,6 @@ struct Token
     u8* data;
     u32 length;
 };
-
-enum JsonNodeType
-{
-    JsonNodeType_Null,
-    JsonNodeType_Object,
-    JsonNodeType_Array,
-    JsonNodeType_String,
-    JsonNodeType_Number,
-    JsonNodeType_Boolean,
-};
-
-struct JsonNode;
-
-struct JObject
-{
-    // TODO: Need to give each value a key
-    u32 length;
-    JsonNode* values;
-};
-
-struct JArray
-{
-    u32 length;
-    JsonNodeType arrayType;
-    u8* values;
-};
-
-struct JsonNode
-{
-    JsonNodeType type;
-    StringLit name;
-    union
-    {
-        bool booleanValue;
-        StringLit string;
-        JObject object;
-        f64 number;
-        JArray array;
-    };
-};
-
-struct JsonDocument
-{
-    MemoryArena* arena;
-    JObject root;
-};
-
-// TODO: Add functions for getting the values by string
 
 JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena);
 JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena);
@@ -353,7 +305,15 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
 JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 {
     JObject obj = {};
-
+    Token peek = PeekToken(tokenizer);
+    if(peek.type == TokenType_CloseBrace)
+    {
+        // Empty object
+        GetToken(tokenizer);
+        obj.length = 0;
+        obj.values = nullptr;
+        return obj;
+    }
     MemoryArena* tempArena = GetTempArena();
     u8* startPos = ArenaGetCurrentPos(tempArena);
     TempMemory block = BeginTempMemory(tempArena);
@@ -392,13 +352,9 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
 {
     JArray arr = {};
-    MemoryArena* tempArena = GetTempArena();
-    u8* startPos = ArenaGetCurrentPos(tempArena);
-    TempMemory block = BeginTempMemory(tempArena);
-    u32 numberOfElements = 0;
-    u32 elementSize = 0;
-    bool endOfObject = false;
     Token peek = PeekToken(tokenizer);
+    u32 elementSize = 0;
+    u32 numberOfElements = 0;
     arr.arrayType = JsonNodeType_Null;
     switch (peek.type)
     {
@@ -423,10 +379,21 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             arr.arrayType = JsonNodeType_Boolean;
             elementSize = sizeof(bool);
             break;
+        case TokenType_CloseBracket:
+            // Empty array
+            GetToken(tokenizer);
+            arr.length = 0;
+            arr.values = nullptr;
+            return arr;
         default:
             InvalidCodePath;
             break;
     }
+
+    MemoryArena* tempArena = GetTempArena();
+    u8* startPos = ArenaGetCurrentPos(tempArena);
+    TempMemory block = BeginTempMemory(tempArena);
+    bool endOfObject = false;
     while (endOfObject == false)
     {
         Token token = GetToken(tokenizer);
@@ -665,40 +632,7 @@ void TestJsonParser()
     u8* data = ReadEntireFile("Test.json", length);
 
     JsonDocument doc = CreateJsonDocument(data, length);
-    auto largeFractionNumber = JsonGetDouble(JsonGetNode(&doc.root, "largeFractionNumber"));
-    auto boolTrue = JsonGetBool(JsonGetNode(&doc.root, "boolTrue"));
-    auto boolFalse = JsonGetBool(JsonGetNode(&doc.root, "boolFalse"));
-    u32 boolArraySize = 0;
-    auto* boolArray = JsonGetBoolArray(JsonGetNode(&doc.root, "boolArray"), &boolArraySize);
-    u32 objectArraySize = 0;
-    auto* objectArray = JsonGetObjectArray(JsonGetNode(&doc.root, "objectArray"), &objectArraySize);
-    auto isNull = JsonIsNull(JsonGetNode(&doc.root, "null"));
-    auto string = JsonGetString(JsonGetNode(&doc.root, "string"));
-    auto* object = JsonGetObject(JsonGetNode(&doc.root, "object"));
-    auto largeNumber = JsonGetLong(JsonGetNode(&doc.root, "largeNumber"));
-    for (u32 i = 0; i < boolArraySize; ++i)
-    {
-        if (boolArray[i])
-        {
-            boolArray;
-        }
-    }
-    f32 sum = 0.0f;
-    for (u32 i = 0; i < objectArraySize; ++i)
-    {
-        for (u32 j = 0; j < objectArray[i].length; ++j)
-        {
-            JsonNode* node = objectArray[i].values + j;
-            switch (node->type)
-            {
-                case JsonNodeType_Array: {} break;
-                case JsonNodeType_Object: {} break;
-                case JsonNodeType_String: {} break;
-                case JsonNodeType_Number: { sum += JsonGetFloat(node); } break;
-                case JsonNodeType_Null: {} break;
-                default: { InvalidCodePath; } break;
-            }
-        }
-    }
+    u32 size = 0;
+    JObject* test = JsonGetObjectArray(JsonGetNode(&doc.root, "enemyFairy"), &size);
     FreeJsonDocument(doc);
 }
