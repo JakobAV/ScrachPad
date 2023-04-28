@@ -182,6 +182,7 @@ bool RequireToken(Tokenizer* tokenizer, TokenType type)
 
 StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
+    tokenizer;
     StringLit result = {};
     result.length = token.length;
     result.text = PushArray(arena, char, token.length + 1);
@@ -197,6 +198,8 @@ inline u8 CharToNumber(u8 c)
 
 f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
+    tokenizer;
+    arena;
     f64 number;
 #if 1
     assert(token.type == TokenType_Number);
@@ -224,6 +227,10 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     }
     fraction *= pow(0.1, fractionNumber-1);
     number = baseNumber + fraction;
+    if(isNegative)
+    {
+        number = -number;
+    }
 #else
     // Slower, but probably more correct
     number = (f64)strtod((const char*)token.data, 0);
@@ -596,17 +603,4 @@ JArray* JsonGetArrayArray(JsonNode* node, u32* size)
 bool JsonIsNull(JsonNode* node)
 {
     return node->type == JsonNodeType_Null;
-}
-
-void JsonSerialize(JsonDocument doc)
-{
-    NotImplemented;
-}
-
-void TestJsonParser(u8* data, u32 length)
-{
-    JsonDocument doc = CreateJsonDocument(data, length);
-    u32 size = 0;
-    JObject* test = JsonGetObjectArray(JsonGetNode(&doc.root->object, "enemyFairy"), &size);
-    FreeJsonDocument(doc);
 }

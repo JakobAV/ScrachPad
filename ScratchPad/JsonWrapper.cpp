@@ -1,63 +1,9 @@
-#include "JsonParser.h"
+#include "JsonWrapper.h"
 
 namespace JJson
 {
-    class JsonWrapper;
-    
-    template<class T>
-    struct ArrayView
-    {
-        const T* array = nullptr;
-        const size_t size = 0;
-    };
-
-    class Json
-    {
-        friend JsonWrapper;
-
-        enum AccessType
-        {
-            AccessType_Node,
-            AccessType_Array,
-            AccessType_Object,
-        };
-
-        AccessType myAccessType;
-        union
-        {
-            JsonNode* myNode;
-            JArray* myArray;
-            JObject* myObjct;
-        };
-        u8* GetArrayData(u32* size);
-    public:
-        Json operator[](const char* name);
-        Json operator[](const int index);
-        f64 GetDouble();
-        f32 GetFloat();
-        s32 GetInt();
-        s64 GetLong();
-        StringLit GetString();
-        bool GetBool();
-        JsonNodeType GetType();
-        JsonNodeType GetArrayType();
-
-        ArrayView<bool> GetBoolArray();
-        ArrayView<StringLit> GetStringArray();
-        ArrayView<f64> GetNumberArray();
-    };
-
-    class JsonWrapper
-    {
-        JsonDocument myDocument;
-    public:
-        JsonWrapper(u8* data, u32 length);
-        ~JsonWrapper();
-        Json GetRoot();
-    };
-
     JsonWrapper::JsonWrapper(u8* data, u32 length)
-    { 
+    {
         myDocument = CreateJsonDocument(data, length);
     }
     
@@ -105,8 +51,7 @@ namespace JJson
         }
         assert((u32)index < array->length);
 
-        Json result;
-        u32 size = 0;
+        Json result = {};
         switch (array->arrayType)
         {
             case JsonNodeType_Array:
@@ -130,6 +75,40 @@ namespace JJson
         return result;
     }
 
+    u32 Json::GetLength()
+    {
+        u32 result = 0;
+        switch (myAccessType)
+        {
+            case AccessType_Node:
+            {
+                switch (myNode->type)
+                {
+                    case JsonNodeType_Array:
+                        result = myNode->array.length;
+                        break;
+                    case JsonNodeType_Object:
+                        result = myNode->object.length;
+                        break;
+                    default:
+                        InvalidCodePath;
+                        break;
+                }
+                break;
+            }
+            case AccessType_Array:
+                result = myArray->length;
+                break;
+            case AccessType_Object:
+                result = myObjct->length;
+                break;
+            default:
+                InvalidCodePath;
+                break;
+        }
+        return result;
+    }
+
     f64 Json::GetDouble()
     {
         return JsonGetDouble(myNode);
@@ -138,7 +117,6 @@ namespace JJson
     f32 Json::GetFloat()
     {
         return JsonGetFloat(myNode);
-        
     }
     
     s32 Json::GetInt()
@@ -164,7 +142,6 @@ namespace JJson
     JsonNodeType Json::GetType()
     {
         return JsonGetType(myNode);
-        
     }
     
     JsonNodeType Json::GetArrayType()
@@ -197,10 +174,10 @@ namespace JJson
     }
 
     ArrayView<bool> Json::GetBoolArray()
-    {   
+    {
         u32 size = 0;
         u8* data = GetArrayData(&size);
-        ArrayView<bool> result = { reinterpret_cast<bool*>(data), size};
+        ArrayView<bool> result = { reinterpret_cast<bool*>(data), size };
         return result;
     }
     
@@ -209,7 +186,7 @@ namespace JJson
         
         u32 size = 0;
         u8* data = GetArrayData(&size);
-        ArrayView<f64> result = { reinterpret_cast<f64*>(data), size};
+        ArrayView<f64> result = { reinterpret_cast<f64*>(data), size };
         return result;
     }
     
@@ -218,7 +195,7 @@ namespace JJson
         
         u32 size = 0;
         u8* data = GetArrayData(&size);
-        ArrayView<StringLit> result = { reinterpret_cast<StringLit*>(data), size};
+        ArrayView<StringLit> result = { reinterpret_cast<StringLit*>(data), size };
         return result;
     }
 };
