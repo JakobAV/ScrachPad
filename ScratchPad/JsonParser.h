@@ -69,3 +69,38 @@ JArray* JsonGetArrayArray(JsonNode* node, u32* size);
 
 bool JsonIsNull(JsonNode* node);
 void JsonSerialize(JsonDocument doc);
+
+/*  Result from cyckle count profiling
+    Read and Parse:
+    Debug:
+    1113078126 / JJson
+    14396201527 / nlohmann
+    0.07731 = 13x
+
+    Release
+    238563012 / JJson
+    766485562 / nlohmann
+    0.31124 = 3x
+
+    Data Access:
+    Debug:
+    47481128 / JJson
+    6717271489 / nlohmann
+    0.00706 = 141x
+
+    Release:
+    7038319 / JJson
+    1058581899 / nlohmann
+    0.00664 = 150x
+
+    Read and Parse + Data Access:
+    Debug:
+    1394504699 / JJson
+    20952824315 / nlohmann
+    0.06655 = 15x
+
+    Release
+    278914663 / JJson
+    1486065129 / nlohmann
+    0.18768 = 5x
+ */

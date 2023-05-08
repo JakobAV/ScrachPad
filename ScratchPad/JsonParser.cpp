@@ -72,7 +72,6 @@ void EatWhiteSpace(Tokenizer& tokenizer)
 
 Token GetToken(Tokenizer* tokenizerPtr)
 {
-    TIMED_FUNCTION(GetToken);
     Tokenizer& tokenizer = *tokenizerPtr;
     EatWhiteSpace(tokenizer);
     u8 c = *tokenizer.at;
@@ -200,7 +199,6 @@ inline u8 CharToNumber(u8 c)
 
 f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
-    TIMED_FUNCTION(ParseNumber);
     tokenizer;
     arena;
     f64 number;
@@ -243,7 +241,6 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 
 JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* arena)
 {
-    TIMED_FUNCTION(ParseJsonNode);
     assert(stringToken.type == TokenType_String);
 
     JsonNode node = {};
@@ -289,7 +286,6 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
 
 JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 {
-    TIMED_FUNCTION(ParseJObject);
     JObject obj = {};
     Token peek = PeekToken(tokenizer);
     if(peek.type == TokenType_CloseBrace)
@@ -337,7 +333,6 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 
 JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
 {
-    TIMED_FUNCTION(ParseJArray);
     JArray arr = {};
     Token peek = PeekToken(tokenizer);
     u32 elementSize = 0;
@@ -448,7 +443,6 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
 
 JsonDocument CreateJsonDocument(u8* fileData, u32 length)
 {
-    TIMED_FUNCTION(CreateJsonDocument);
     Tokenizer tokenizer = {};
     tokenizer.data = fileData;
     tokenizer.at = fileData;
