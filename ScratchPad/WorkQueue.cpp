@@ -26,6 +26,8 @@ bool DoNextWorkQueueEntry(WorkQueue* queue)
 		u32 index = InterlockedCompareExchange(&queue->nextEntryToRead, newNextEntryToRead, originalNextEntryToRead);
 		if (index == originalNextEntryToRead)
 		{
+			// We make a copy here so that if this is a long running task it will remain in stack memory while the queue entry is used for a new task.
+			// It shouldn't be needed since we are sending in a copy of the data pointer, but just to be safe
 			WorkQueueEntry entry = queue->entries[index];
 			entry.callback(queue, entry.data);
 			InterlockedIncrement(&queue->completionCount);

@@ -38,13 +38,24 @@ u32 SumPosnlohmannArray(nlohmann::json jsonArray)
     return result;
 }
 
+WorkQueueCallback(LongWork)
+{
+	Sleep(10000);
+	char buffer[456];
+	wsprintfA(buffer, "\nThread %u: %s\n", GetCurrentThreadId(), (char*)data);
+	OutputDebugStringA(buffer);
+}
 
 int main(int argc, char** argv)
 {
 	WorkQueue queue = {};
 	ThreadStartup startUps[16];
 	MakeQueue(&queue, ArrayCount(startUps), startUps);
-	for(u32 i = 0; i < 64; ++i)
+	for(u32 i = 0; i < 14; ++i)
+	{
+		AddEntry(&queue, LongWork, (void*)"LongWork");
+	}
+	for(u32 i = 0; i < MAX_WORK_ENTIRES * 2; ++i)
 	{
 		AddEntry(&queue, DoWorkerWork, (void*)"Hello World!");
 	}
