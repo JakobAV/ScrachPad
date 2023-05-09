@@ -1,5 +1,4 @@
 #pragma once
-#include <windows.h>
 #include "Shared.h"
 
 struct WorkQueue;
@@ -21,7 +20,7 @@ struct WorkQueue
 
 	u32 volatile  nextEntryToWrite;
 	u32 volatile  nextEntryToRead;
-	HANDLE semaphoreHandle;
+	void* semaphoreHandle;
 
 	WorkQueueEntry entries[MAX_WORK_ENTIRES];
 };
@@ -31,10 +30,11 @@ struct ThreadStartup
 	WorkQueue* queue;
 };
 
+// IMPORTANT: You need to call ExitProcess(0) to make sure that the threads created actualy exit
+void MakeQueue(WorkQueue* queue, u32 threadCount, ThreadStartup* threadStartups);
 void AddEntry(WorkQueue* queue, WorkQueueCallback* callback, void* data);
 bool DoNextWorkQueueEntry(WorkQueue* queue);
 void CompleteAllWork(WorkQueue* queue);
-void MakeQueue(WorkQueue* queue, u32 threadCount, ThreadStartup* threadStartups);
 
 static WorkQueueCallback(DoWorkerWork)
 {

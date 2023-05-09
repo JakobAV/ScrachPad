@@ -41,54 +41,64 @@ u32 SumPosnlohmannArray(nlohmann::json jsonArray)
 
 int main(int argc, char** argv)
 {
-    const u32 loopCount = 5;
-    u32 totalJJson = 0;
-    u32 length = 0;
-    u8* data = ReadEntireFile("Test.json", length);
-    JJson::JsonWrapper doc(data, length);
-    free(data);
+	WorkQueue queue = {};
+	ThreadStartup startUps[16];
+	MakeQueue(&queue, ArrayCount(startUps), startUps);
+	for(u32 i = 0; i < 64; ++i)
+	{
+		AddEntry(&queue, DoWorkerWork, (void*)"Hello World!");
+	}
+	CompleteAllWork(&queue);
+	ExitProcess(0);
 
-    for (u32 i = 0; i < loopCount; ++i)
-    {
-        TIMED_BLOCK(ProcessJJson, (char*)"ProcessJJson");
-        JJson::Json object = doc.GetRoot();
-        JJson::Json fairyArray = object["enemyFairy"];
-        JJson::Json collectibleArray = object["collectible"];
-        JJson::Json tilesArray = object["tile"];
-        JJson::Json spriteDecorArray = object["spriteDecor"];
-        totalJJson += SumPosJJsonArray(fairyArray);
-        totalJJson += SumPosJJsonArray(collectibleArray);
-        totalJJson += SumPosJJsonArray(tilesArray);
-        totalJJson += SumPosJJsonArray(spriteDecorArray);
-        JJson::ArrayView<f64> numbers = object["Untagged"].GetNumberArray();
-        for(u32 j = 0; j < numbers.size; ++j)
-        {
-            totalJJson += (u32)numbers.array[j];
-        }
-    }
-
-    u32 totalnlohmann = 0;
-    nlohmann::json json;
-    std::ifstream file; 
-    file.open("Test.json");
-    file >> json;
-    for (u32 i = 0; i < loopCount; ++i)
-    {
-        TIMED_BLOCK(Processnlohmann, (char*)"Processnlohmann");
-        nlohmann::json fairyArray = json["enemyFairy"];
-        nlohmann::json collectibleArray = json["collectible"];
-        nlohmann::json tilesArray = json["tile"];
-        nlohmann::json spriteDecorArray = json["spriteDecor"];
-        totalnlohmann += SumPosnlohmannArray(fairyArray);
-        totalnlohmann += SumPosnlohmannArray(collectibleArray);
-        totalnlohmann += SumPosnlohmannArray(tilesArray);
-        totalnlohmann += SumPosnlohmannArray(spriteDecorArray);
-        nlohmann::json numbers = json["Untagged"];
-        for(auto& num : numbers)
-        {
-            totalnlohmann += (u32)num;
-        }
-    }
-    printf("JJson: %u\nnlohmann: %u\n", totalJJson, totalnlohmann);
-    EndDebugFrame();
+//    const u32 loopCount = 0;
+//    u32 totalJJson = 0;
+//    u32 length = 0;
+//    u8* data = ReadEntireFile("Test.json", length);
+//    JJson::JsonWrapper doc(data, length);
+//    free(data);
+//
+//    for (u32 i = 0; i < loopCount; ++i)
+//    {
+//        TIMED_BLOCK(ProcessJJson, (char*)"ProcessJJson");
+//        JJson::Json object = doc.GetRoot();
+//        JJson::Json fairyArray = object["enemyFairy"];
+//        JJson::Json collectibleArray = object["collectible"];
+//        JJson::Json tilesArray = object["tile"];
+//        JJson::Json spriteDecorArray = object["spriteDecor"];
+//        totalJJson += SumPosJJsonArray(fairyArray);
+//        totalJJson += SumPosJJsonArray(collectibleArray);
+//        totalJJson += SumPosJJsonArray(tilesArray);
+//        totalJJson += SumPosJJsonArray(spriteDecorArray);
+//        JJson::ArrayView<f64> numbers = object["Untagged"].GetNumberArray();
+//        for(u32 j = 0; j < numbers.size; ++j)
+//        {
+//            totalJJson += (u32)numbers.array[j];
+//        }
+//    }
+//
+//    u32 totalnlohmann = 0;
+//    nlohmann::json json;
+//    std::ifstream file; 
+//    file.open("Test.json");
+//    file >> json;
+//    for (u32 i = 0; i < loopCount; ++i)
+//    {
+//        TIMED_BLOCK(Processnlohmann, (char*)"Processnlohmann");
+//        nlohmann::json fairyArray = json["enemyFairy"];
+//        nlohmann::json collectibleArray = json["collectible"];
+//        nlohmann::json tilesArray = json["tile"];
+//        nlohmann::json spriteDecorArray = json["spriteDecor"];
+//        totalnlohmann += SumPosnlohmannArray(fairyArray);
+//        totalnlohmann += SumPosnlohmannArray(collectibleArray);
+//        totalnlohmann += SumPosnlohmannArray(tilesArray);
+//        totalnlohmann += SumPosnlohmannArray(spriteDecorArray);
+//        nlohmann::json numbers = json["Untagged"];
+//        for(auto& num : numbers)
+//        {
+//            totalnlohmann += (u32)num;
+//        }
+//    }
+//    printf("JJson: %u\nnlohmann: %u\n", totalJJson, totalnlohmann);
+//    EndDebugFrame();
 }

@@ -1,7 +1,6 @@
 #pragma once
 #include <windows.h>
 #include "WorkQueue.h"
-#include "Shared.h"
 
 void AddEntry(WorkQueue* queue, WorkQueueCallback* callback, void* data)
 {
@@ -64,7 +63,7 @@ DWORD WINAPI ThreadProc(void* lpParam)
 	return 0;
 }
 
-void MakeQueue(WorkQueue* queue, unsigned int threadCount, ThreadStartup* threadStartups)
+void MakeQueue(WorkQueue* queue, u32 threadCount, ThreadStartup* threadStartups)
 {
 	queue->completionGoal = 0;
 	queue->completionCount = 0;
