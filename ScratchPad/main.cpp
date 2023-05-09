@@ -5,6 +5,7 @@
 #include "MemoryArena.cpp"
 #include "JsonWrapper.cpp"
 #include "DebugUtils.cpp"
+#include "WorkQueue.cpp"
 #include "FileUtilities.h"
 #include "nlohmann/json.hpp"
 #include <fstream>
