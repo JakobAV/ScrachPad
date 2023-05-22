@@ -104,3 +104,16 @@ void JsonSerialize(JsonDocument doc);
     1486065129 / nlohmann
     0.18768 = 5x
  */
+
+ /*  Result time loading level
+    Debug:
+    17.8281 / nlohmann (Parse ~11s, opperator[] 0.68s)*
+    7.79689 / JJson (Parse 0.56s, opperator[] 0.04s)
+
+    Release:
+    4.64627 / nlohmann (Parse 0.15s, opperator[] < 0.01s)*
+    4.44352 / JJson (Parse 0.06s, opperator[] < 0.01s)
+    
+    *Disclaimer: It wasn't easy to find all the time for nlohmann in the profiler,
+                 so the total time could be a bit to low
+ */
