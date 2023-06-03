@@ -4,7 +4,6 @@
 #include <math.h>
 #include "JsonParser.h"
 #include "Shared.h"
-#include "DebugUtils.h"
 
 struct Tokenizer
 {
@@ -13,25 +12,25 @@ struct Tokenizer
     u8* at;
 };
 
-enum TokenType
+enum JsonTokenType
 {
-    TokenType_OpenBrace,
-    TokenType_CloseBrace,
-    TokenType_OpenBracket,
-    TokenType_CloseBracket,
-    TokenType_Comma,
-    TokenType_Colon,
-    TokenType_String,
-    TokenType_Number,
-    TokenType_True,
-    TokenType_False,
-    TokenType_Null,
-    TokenType_EndOfFile,
+    JsonTokenType_OpenBrace,
+    JsonTokenType_CloseBrace,
+    JsonTokenType_OpenBracket,
+    JsonTokenType_CloseBracket,
+    JsonTokenType_Comma,
+    JsonTokenType_Colon,
+    JsonTokenType_String,
+    JsonTokenType_Number,
+    JsonTokenType_True,
+    JsonTokenType_False,
+    JsonTokenType_Null,
+    JsonTokenType_EndOfFile,
 };
 
 struct Token
 {
-    TokenType type;
+    JsonTokenType type;
     u8* data;
     u32 length;
 };
@@ -41,12 +40,6 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena);
 StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena);
 f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena);
 JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* arena);
-
-MemoryArena* GetTempArena()
-{
-    static MemoryArena* tempArena = CreateArena(0, 0);
-    return tempArena;
-}
 
 bool IsNumber(u8 c)
 {
@@ -81,18 +74,18 @@ Token GetToken(Tokenizer* tokenizerPtr)
     ++tokenizer.at;
     switch (c)
     {
-        case '{': { token.type = TokenType_OpenBrace; } break;
-        case '}': { token.type = TokenType_CloseBrace; } break;
-        case '[': { token.type = TokenType_OpenBracket; } break;
-        case ']': { token.type = TokenType_CloseBracket; } break;
-        case ':': { token.type = TokenType_Colon; } break;
-        case ',': { token.type = TokenType_Comma; } break;
-        case EOF: { token.type = TokenType_EndOfFile; } break;
+        case '{': { token.type = JsonTokenType_OpenBrace; } break;
+        case '}': { token.type = JsonTokenType_CloseBrace; } break;
+        case '[': { token.type = JsonTokenType_OpenBracket; } break;
+        case ']': { token.type = JsonTokenType_CloseBracket; } break;
+        case ':': { token.type = JsonTokenType_Colon; } break;
+        case ',': { token.type = JsonTokenType_Comma; } break;
+        case EOF: { token.type = JsonTokenType_EndOfFile; } break;
         case 't':
         {
             if (tokenizer.at[0] == 'r' && tokenizer.at[1] == 'u' && tokenizer.at[2] == 'e')
             {
-                token.type = TokenType_True;
+                token.type = JsonTokenType_True;
                 tokenizer.at += 3;
             }
             else
@@ -104,7 +97,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         {
             if (tokenizer.at[0] == 'a' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 's' && tokenizer.at[3] == 'e')
             {
-                token.type = TokenType_False;
+                token.type = JsonTokenType_False;
                 tokenizer.at += 4;
             }
             else
@@ -116,7 +109,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         {
             if (tokenizer.at[0] == 'u' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 'l')
             {
-                token.type = TokenType_Null;
+                token.type = JsonTokenType_Null;
                 tokenizer.at += 3;
             }
             else
@@ -126,7 +119,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         } break;
         case '"':
         {
-            token.type = TokenType_String;
+            token.type = JsonTokenType_String;
             token.data = tokenizer.at;
 
             u32 length = 0;
@@ -148,7 +141,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         {
             if (c == '-' || IsNumber(c))
             {
-                token.type = TokenType_Number;
+                token.type = JsonTokenType_Number;
                 c = *tokenizer.at;
                 while (IsNumber(c) || c == '.')
                 {
@@ -159,7 +152,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
             }
             else
             {
-                assert(false);
+                InvalidCodePath;
             }
         } break;
     }
@@ -175,7 +168,7 @@ Token PeekToken(Tokenizer* tokenizer)
     return token;
 }
 
-bool RequireToken(Tokenizer* tokenizer, TokenType type)
+bool RequireToken(Tokenizer* tokenizer, JsonTokenType type)
 {
     Token token = GetToken(tokenizer);
     return token.type == type;
@@ -186,7 +179,7 @@ StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     tokenizer;
     StringLit result = {};
     result.length = token.length;
-    result.text = PushArray(arena, char, token.length + 1);
+    result.text = PushArrayAligned(arena, char, token.length + 1, 1);
     memcpy_s((u8*)result.text, token.length + 1, token.data, token.length);
     ((u8*)result.text)[token.length] = '\0';
     return result;
@@ -203,7 +196,7 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     arena;
     f64 number;
 #if 1
-    assert(token.type == TokenType_Number);
+    assert(token.type == JsonTokenType_Number);
     bool isNegative = token.data[0] == '-';
     u64 baseNumber = 0;
     f64 fraction = 0;
@@ -241,11 +234,11 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 
 JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* arena)
 {
-    assert(stringToken.type == TokenType_String);
+    assert(stringToken.type == JsonTokenType_String);
 
     JsonNode node = {};
     node.name = ParseString(stringToken, tokenizer, arena);
-    if (!RequireToken(tokenizer, TokenType_Colon))
+    if (!RequireToken(tokenizer, JsonTokenType_Colon))
     {
         InvalidCodePath;
         return node;
@@ -253,28 +246,28 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
     Token token = GetToken(tokenizer);
     switch (token.type)
     {
-        case TokenType_String:
+        case JsonTokenType_String:
             node.type = JsonNodeType_String;
             node.string = ParseString(token, tokenizer, arena);
             break;
-        case TokenType_Number:
+        case JsonTokenType_Number:
             node.type = JsonNodeType_Number;
             node.number = ParseNumber(token, tokenizer, arena);
             break;
-        case TokenType_OpenBrace:
+        case JsonTokenType_OpenBrace:
             node.type = JsonNodeType_Object;
             node.object = ParseJObject(tokenizer, arena);
             break;
-        case TokenType_OpenBracket:
+        case JsonTokenType_OpenBracket:
             node.type = JsonNodeType_Array;
             node.array = ParseJArray(tokenizer, arena);
             break;
-        case TokenType_False:
-        case TokenType_True:
+        case JsonTokenType_False:
+        case JsonTokenType_True:
             node.type = JsonNodeType_Boolean;
-            node.booleanValue = token.type == TokenType_True ? true : false;
+            node.booleanValue = token.type == JsonTokenType_True;
             break;
-        case TokenType_Null:
+        case JsonTokenType_Null:
             node.type = JsonNodeType_Null;
             break;
         default:
@@ -288,7 +281,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 {
     JObject obj = {};
     Token peek = PeekToken(tokenizer);
-    if(peek.type == TokenType_CloseBrace)
+    if(peek.type == JsonTokenType_CloseBrace)
     {
         // Empty object
         GetToken(tokenizer);
@@ -296,9 +289,10 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
         obj.values = nullptr;
         return obj;
     }
-    MemoryArena* tempArena = GetTempArena();
-    u8* startPos = ArenaGetCurrentPos(tempArena);
+    MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
+    ArenaSetAlignment(tempArena, sizeof(JsonNode));
+    u8* startPos = ArenaGetCurrentPos(tempArena);
     u32 numberOfNodes = 0;
     bool endOfObject = false;
     while (endOfObject == false)
@@ -306,12 +300,12 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
         Token token = GetToken(tokenizer);
         switch (token.type)
         {
-            case TokenType_CloseBrace:
+            case JsonTokenType_CloseBrace:
                 endOfObject = true;
                 break;
-            case TokenType_Comma:
+            case JsonTokenType_Comma:
                 break;
-            case TokenType_String:
+            case JsonTokenType_String:
             {
                 JsonNode* node = PushType(tempArena, JsonNode);
                 *node = ParseJsonNode(token, tokenizer, arena);
@@ -325,6 +319,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
         }
     }
     obj.length = numberOfNodes;
+    ArenaSetAlignment(arena, sizeof(JsonNode));
     obj.values = PushArray(arena, JsonNode, numberOfNodes);
     memcpy_s(obj.values, numberOfNodes * sizeof(JsonNode), startPos, numberOfNodes * sizeof(JsonNode));
     EndTempMemory(&block);
@@ -340,28 +335,28 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     arr.arrayType = JsonNodeType_Null;
     switch (peek.type)
     {
-        case TokenType_String:
+        case JsonTokenType_String:
             arr.arrayType = JsonNodeType_String;
             elementSize = sizeof(StringLit);
             break;
-        case TokenType_Number:
+        case JsonTokenType_Number:
             arr.arrayType = JsonNodeType_Number;
             elementSize = sizeof(f64);
             break;
-        case TokenType_OpenBrace:
+        case JsonTokenType_OpenBrace:
             arr.arrayType = JsonNodeType_Object;
             elementSize = sizeof(JObject);
             break;
-        case TokenType_OpenBracket:
+        case JsonTokenType_OpenBracket:
             arr.arrayType = JsonNodeType_Array;
             elementSize = sizeof(JArray);
             break;
-        case TokenType_True:
-        case TokenType_False:
+        case JsonTokenType_True:
+        case JsonTokenType_False:
             arr.arrayType = JsonNodeType_Boolean;
             elementSize = sizeof(bool);
             break;
-        case TokenType_CloseBracket:
+        case JsonTokenType_CloseBracket:
             // Empty array
             GetToken(tokenizer);
             arr.length = 0;
@@ -372,21 +367,22 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             break;
     }
 
-    MemoryArena* tempArena = GetTempArena();
-    u8* startPos = ArenaGetCurrentPos(tempArena);
+    MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
+    ArenaSetAlignment(tempArena, elementSize);
+    u8* startPos = ArenaGetCurrentPos(tempArena);
     bool endOfObject = false;
     while (endOfObject == false)
     {
         Token token = GetToken(tokenizer);
         switch (token.type)
         {
-            case TokenType_CloseBracket:
+            case JsonTokenType_CloseBracket:
                 endOfObject = true;
                 break;
-            case TokenType_Comma:
+            case JsonTokenType_Comma:
                 break;
-            case TokenType_String:
+            case JsonTokenType_String:
             {
                 assert(arr.arrayType == JsonNodeType_String);
                 StringLit* str = PushType(tempArena, StringLit);
@@ -394,7 +390,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 numberOfElements += 1;
                 break;
             }
-            case TokenType_Number:
+            case JsonTokenType_Number:
             {
                 assert(arr.arrayType == JsonNodeType_Number);
                 f64* node = PushType(tempArena, f64);
@@ -402,7 +398,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 numberOfElements += 1;
                 break;
             }
-            case TokenType_OpenBrace:
+            case JsonTokenType_OpenBrace:
             {
                 assert(arr.arrayType == JsonNodeType_Object);
                 JObject* node = PushType(tempArena, JObject);
@@ -410,7 +406,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 numberOfElements += 1;
                 break;
             }
-            case TokenType_OpenBracket:
+            case JsonTokenType_OpenBracket:
             {
                 assert(arr.arrayType == JsonNodeType_Array);
                 JArray* node = PushType(tempArena, JArray);
@@ -418,12 +414,12 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 numberOfElements += 1;
                 break;
             }
-            case TokenType_False:
-            case TokenType_True:
+            case JsonTokenType_False:
+            case JsonTokenType_True:
             {
                 assert(arr.arrayType == JsonNodeType_Boolean);
                 bool* node = PushType(tempArena, bool);
-                *node = token.type == TokenType_True ? true : false;
+                *node = token.type == JsonTokenType_True ? true : false;
                 numberOfElements += 1;
                 break;
             }
@@ -435,13 +431,14 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     }
     u32 dataToCopy = numberOfElements * elementSize;
     arr.length = numberOfElements;
+    ArenaSetAlignment(arena, elementSize);
     arr.values = PushArray(arena, u8, dataToCopy);
     memcpy_s(arr.values, dataToCopy, startPos, dataToCopy);
     EndTempMemory(&block);
     return arr;
 }
 
-JsonDocument CreateJsonDocument(u8* fileData, u32 length)
+JsonDocument CreateJsonDocument(MemoryArena* arena, u8* fileData, u32 length)
 {
     Tokenizer tokenizer = {};
     tokenizer.data = fileData;
@@ -449,7 +446,28 @@ JsonDocument CreateJsonDocument(u8* fileData, u32 length)
     tokenizer.length = length;
 
     JsonDocument doc = {};
-    if (!RequireToken(&tokenizer, TokenType_OpenBrace))
+    if (!RequireToken(&tokenizer, JsonTokenType_OpenBrace))
+    {
+        InvalidCodePath;
+        return doc;
+    }
+    doc.root = PushType(arena, JsonNode);
+    doc.root->type = JsonNodeType_Object;
+    doc.root->name = { 0, nullptr };
+    doc.root->object = ParseJObject(&tokenizer, arena);
+
+    return doc;
+}
+
+JsonDocument CreateManagedJsonDocument(u8* fileData, u32 length)
+{
+    Tokenizer tokenizer = {};
+    tokenizer.data = fileData;
+    tokenizer.at = fileData;
+    tokenizer.length = length;
+
+    JsonDocument doc = {};
+    if (!RequireToken(&tokenizer, JsonTokenType_OpenBrace))
     {
         InvalidCodePath;
         return doc;
@@ -465,7 +483,15 @@ JsonDocument CreateJsonDocument(u8* fileData, u32 length)
 
 void FreeJsonDocument(JsonDocument doc)
 {
-    FreeArena(doc.arena);
+    if(doc.arena)
+    {
+        FreeArena(doc.arena);
+    }
+    else
+    {
+        // Tried to free an unmanaged JsonDocument
+        InvalidCodePath;
+    }
 }
 
 JsonNode* JsonGetNode(JObject* obj, const char* name)
@@ -478,6 +504,12 @@ JsonNode* JsonGetNode(JObject* obj, const char* name)
         }
     }
     return nullptr;
+}
+
+JsonNode* JsonGetNode(JObject* obj, u32 index)
+{
+    assert(index < obj->length);
+    return obj->values + index;
 }
 
 JObject* JsonGetObject(JsonNode* node)
@@ -603,19 +635,5 @@ JArray* JsonGetArrayArray(JsonNode* node, u32* size)
 
 bool JsonIsNull(JsonNode* node)
 {
-    return node->type == JsonNodeType_Null;
-}
-
-void JsonSerialize(JsonDocument doc)
-{
-    NotImplemented;
-}
-
-void TestJsonParser(u8* data, u32 length)
-{
-    JsonDocument doc = CreateJsonDocument(data, length);
-    u32 size = 0;
-    JObject* test = JsonGetObjectArray(JsonGetNode(&doc.root->object, "enemyFairy"), &size);
-    FreeJsonDocument(doc);
-    EndDebugFrame();
+    return node == nullptr || node->type == JsonNodeType_Null;
 }

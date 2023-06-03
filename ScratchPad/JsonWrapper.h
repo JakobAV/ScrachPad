@@ -29,7 +29,7 @@ namespace JJson
         {
             JsonNode* myNode;
             JArray* myArray;
-            JObject* myObjct;
+            JObject* myObject;
         };
         u8* GetArrayData(u32* size);
     public:
@@ -42,20 +42,29 @@ namespace JJson
         s64 GetLong();
         StringLit GetString();
         bool GetBool();
+        bool IsNull();
         JsonNodeType GetType();
         JsonNodeType GetArrayType();
+
+        StringLit GetName();
 
         ArrayView<bool> GetBoolArray();
         ArrayView<StringLit> GetStringArray();
         ArrayView<f64> GetNumberArray();
+
+        static u8* ReadEntireFile(const char* fileName, u32& bytesRead);
     };
 
     class JsonWrapper
     {
-        JsonDocument myDocument;
+        JsonDocument myDocument = {};
     public:
-        JsonWrapper(u8* data, u32 length);
+        JsonWrapper();
         ~JsonWrapper();
+        JsonWrapper(u8* data, u32 length);
+        JsonWrapper(MemoryArena* arena, u8* data, u32 length);
+        void Init(u8* data, u32 length);
+        void Init(MemoryArena* arena, u8* data, u32 length);
         Json GetRoot();
     };
 

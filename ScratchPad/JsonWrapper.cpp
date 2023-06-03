@@ -1,15 +1,48 @@
 #include "JsonWrapper.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace JJson
 {
-    JsonWrapper::JsonWrapper(u8* data, u32 length)
+    JsonWrapper::JsonWrapper()
     {
-        myDocument = CreateJsonDocument(data, length);
     }
-    
+
     JsonWrapper::~JsonWrapper()
     {
-        FreeJsonDocument(myDocument);
+        if(myDocument.arena)
+        {
+            FreeJsonDocument(myDocument);
+        }
+    }
+
+    JsonWrapper::JsonWrapper(u8* data, u32 length)
+    {
+        Init(data, length);
+    }
+
+     JsonWrapper::JsonWrapper(MemoryArena* arena, u8* data, u32 length)
+     {
+         Init(arena, data, length);
+     }
+
+    void JsonWrapper::Init(u8* data, u32 length)
+    {
+        if(myDocument.arena)
+        {
+            ArenaClear(myDocument.arena);
+        }
+        myDocument = CreateManagedJsonDocument(data, length);
+    }
+
+    void JsonWrapper::Init(MemoryArena* arena, u8* data, u32 length)
+    {
+        if(myDocument.arena)
+        {
+            // TODO: Should it be allowed to init an unmanaged JsonDocument over a managed one?
+            FreeJsonDocument(myDocument);
+        }
+        myDocument = CreateJsonDocument(arena, data, length);
     }
 
     Json JsonWrapper::GetRoot()
@@ -24,7 +57,7 @@ namespace JJson
         JObject* object;
         if (myAccessType == AccessType_Object)
         {
-            object = myObjct;
+            object = myObject;
         }
         else
         {
@@ -39,6 +72,25 @@ namespace JJson
 
     Json Json::operator[](const int index)
     {
+        JObject* object = nullptr;
+        if (myAccessType == AccessType_Object)
+        {
+            object = myObject;
+
+        }
+        else if (myAccessType == AccessType_Node && myNode->type == JsonNodeType_Object)
+        {
+            object = &myNode->object;
+
+        }
+        if (object)
+        {
+            JsonNode* node = JsonGetNode(object, index);
+            Json result;
+            result.myNode = node;
+            return result;
+        }
+
         JArray* array;
         if (myAccessType == AccessType_Array)
         {
@@ -65,7 +117,7 @@ namespace JJson
             {
                 JObject* arr = reinterpret_cast<JObject*>(array->values);
                 result.myAccessType = AccessType_Object;
-                result.myObjct = arr + index;
+                result.myObject = arr + index;
                 break;
             }
             default:
@@ -100,7 +152,7 @@ namespace JJson
                 result = myArray->length;
                 break;
             case AccessType_Object:
-                result = myObjct->length;
+                result = myObject->length;
                 break;
             default:
                 InvalidCodePath;
@@ -138,12 +190,17 @@ namespace JJson
     {
         return JsonGetBool(myNode);
     }
-    
+
+    bool Json::IsNull()
+    {
+        return JsonIsNull(myNode);
+    }
+
     JsonNodeType Json::GetType()
     {
         return JsonGetType(myNode);
     }
-    
+
     JsonNodeType Json::GetArrayType()
     {
         return JsonGetArrayType(myNode);
@@ -173,6 +230,13 @@ namespace JJson
         return array->values;
     }
 
+    StringLit Json::GetName()
+    {
+        assert(myAccessType == AccessType_Node);
+        return myNode->name;
+    }
+
+
     ArrayView<bool> Json::GetBoolArray()
     {
         u32 size = 0;
@@ -197,5 +261,36 @@ namespace JJson
         u8* data = GetArrayData(&size);
         ArrayView<StringLit> result = { reinterpret_cast<StringLit*>(data), size };
         return result;
+    }
+
+    u8* Json::ReadEntireFile(const char* fileName, u32& bytesRead)
+    {
+        FILE* fileHandle;
+        fopen_s(&fileHandle, fileName, "r");
+        if (fileHandle == nullptr)
+        {
+            return nullptr;
+        }
+        if (fseek(fileHandle, 0, SEEK_END) != 0)
+        {
+            fclose(fileHandle);
+            return nullptr;
+        }
+        int fileSize = ftell(fileHandle);
+        if (fileSize == 0)
+        {
+            fclose(fileHandle);
+            return nullptr;
+        }
+        fseek(fileHandle, 0, SEEK_SET);
+        u8* buffer = (u8*)malloc(fileSize);
+        if (buffer == 0)
+        {
+            fclose(fileHandle);
+            return nullptr;
+        }
+        bytesRead = (u32)fread_s(buffer, fileSize, sizeof(char), fileSize, fileHandle);
+        fclose(fileHandle);
+        return buffer;
     }
 };

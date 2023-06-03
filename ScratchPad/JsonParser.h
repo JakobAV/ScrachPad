@@ -42,16 +42,19 @@ struct JsonNode
     };
 };
 
+// TODO: Should ManagedJsonDocument be a seperate type
 struct JsonDocument
 {
-    MemoryArena* arena;
+    MemoryArena* arena = nullptr;
     JsonNode* root;
 };
 
-JsonDocument CreateJsonDocument(u8* fileData, u32 length);
+JsonDocument CreateJsonDocument(MemoryArena* arena, u8* fileData, u32 length);
+JsonDocument CreateManagedJsonDocument(u8* fileData, u32 length);
 void FreeJsonDocument(JsonDocument doc);
 
 JsonNode* JsonGetNode(JObject* obj, const char* name);
+JsonNode* JsonGetNode(JObject* obj, u32 index);
 JObject* JsonGetObject(JsonNode* node);
 f64 JsonGetDouble(JsonNode* node);
 f32 JsonGetFloat(JsonNode* node);
@@ -68,7 +71,6 @@ JObject* JsonGetObjectArray(JsonNode* node, u32* size);
 JArray* JsonGetArrayArray(JsonNode* node, u32* size);
 
 bool JsonIsNull(JsonNode* node);
-void JsonSerialize(JsonDocument doc);
 
 /*  Result from cyckle count profiling
     Read and Parse:
@@ -85,22 +87,26 @@ void JsonSerialize(JsonDocument doc);
     Data Access:
     Debug:
     47481128 / JJson
+    35768983 / JJson with memory alignment
     6717271489 / nlohmann
     0.00706 = 141x
 
     Release:
     7038319 / JJson
+    14904522 / JJson with memory alignment
     1058581899 / nlohmann
     0.00664 = 150x
 
     Read and Parse + Data Access:
     Debug:
     1394504699 / JJson
+    939403541 / JJson with memory alignment
     20952824315 / nlohmann
     0.06655 = 15x
 
     Release
     278914663 / JJson
+    319055188 / JJson with memory alignment
     1486065129 / nlohmann
     0.18768 = 5x
  */
