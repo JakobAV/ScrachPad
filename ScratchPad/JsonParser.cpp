@@ -174,6 +174,24 @@ bool RequireToken(Tokenizer* tokenizer, JsonTokenType type)
     return token.type == type;
 }
 
+u32 HashString(const char * s)
+{
+    u32 hash = 0;
+
+    for(; *s; ++s)
+    {
+        hash += *s;
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+
+    return hash;
+}
+
 StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena)
 {
     tokenizer;
@@ -238,6 +256,7 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
 
     JsonNode node = {};
     node.name = ParseString(stringToken, tokenizer, arena);
+    node.hashValue = HashString(node.name.text);
     if (!RequireToken(tokenizer, JsonTokenType_Colon))
     {
         InvalidCodePath;
@@ -292,6 +311,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
     MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
     ArenaSetAlignment(tempArena, sizeof(JsonNode));
+    ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
     u32 numberOfNodes = 0;
     bool endOfObject = false;
@@ -370,6 +390,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
     ArenaSetAlignment(tempArena, elementSize);
+    ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
     bool endOfObject = false;
     while (endOfObject == false)
@@ -496,9 +517,10 @@ void FreeJsonDocument(JsonDocument doc)
 
 JsonNode* JsonGetNode(JObject* obj, const char* name)
 {
+    u32 hashNumber = HashString(name);
     for (u32 i = 0; i < obj->length; ++i)
     {
-        if (strncmp(obj->values[i].name.text, name, obj->values[i].name.length) == 0)
+        if (hashNumber == obj->values[i].hashValue && strncmp(obj->values[i].name.text, name, obj->values[i].name.length) == 0)
         {
             return obj->values + i;
         }

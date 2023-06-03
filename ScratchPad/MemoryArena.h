@@ -33,6 +33,7 @@ MemoryArena* CreateArena(u64 reserveSize = GB(4), u32 decommitThresholdInPageSiz
 void* ArenaPush(MemoryArena* arena, u32 size);
 void* ArenaPushWithAlignment(MemoryArena* arena, u32 size, u32 alignment);
 void ArenaSetAlignment(MemoryArena* arena, u32 alignment);
+void ArenaPushAlignment(MemoryArena* arena);
 void ArenaPop(MemoryArena* arena, u32 size);
 void ArenaPopTo(MemoryArena* arena, u64 position);
 void ArenaClear(MemoryArena* arena);

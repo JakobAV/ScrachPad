@@ -31,6 +31,7 @@ struct JArray
 struct JsonNode
 {
     JsonNodeType type;
+    u32 hashValue;
     StringLit name;
     union
     {
