@@ -94,7 +94,7 @@ bool JsonIsNull(JsonNode* node);
 
     Release:
     7038319 / JJson
-    14904522 / JJson with memory alignment
+    6197243 / JJson with memory alignment
     1058581899 / nlohmann
     0.00664 = 150x
 

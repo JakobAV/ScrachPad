@@ -313,6 +313,8 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
     ArenaSetAlignment(tempArena, alignof(JsonNode));
     ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
+    AssertAligned(startPos, alignof(JsonNode));
+
     u32 numberOfNodes = 0;
     bool endOfObject = false;
     while (endOfObject == false)
@@ -328,6 +330,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
             case JsonTokenType_String:
             {
                 JsonNode* node = PushType(tempArena, JsonNode);
+                AssertAligned(node, alignof(JsonNode));
                 *node = ParseJsonNode(token, tokenizer, arena);
                 numberOfNodes += 1;
                 break;
@@ -341,6 +344,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
     obj.length = numberOfNodes;
     ArenaSetAlignment(arena, alignof(JsonNode));
     obj.values = PushArray(arena, JsonNode, numberOfNodes);
+    AssertAligned(obj.values, alignof(JsonNode));
     memcpy_s(obj.values, numberOfNodes * sizeof(JsonNode), startPos, numberOfNodes * sizeof(JsonNode));
     EndTempMemory(&block);
     return obj;
@@ -398,6 +402,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     ArenaSetAlignment(tempArena, elementAlignment);
     ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
+    AssertAligned(startPos, elementAlignment);
     bool endOfObject = false;
     while (endOfObject == false)
     {
@@ -413,6 +418,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             {
                 assert(arr.arrayType == JsonNodeType_String);
                 StringLit* str = PushType(tempArena, StringLit);
+                AssertAligned(str, alignof(StringLit));
                 *str = ParseString(token, tokenizer, arena);
                 numberOfElements += 1;
                 break;
@@ -421,6 +427,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             {
                 assert(arr.arrayType == JsonNodeType_Number);
                 f64* node = PushType(tempArena, f64);
+                AssertAligned(node, alignof(f64));
                 *node = ParseNumber(token, tokenizer, arena);
                 numberOfElements += 1;
                 break;
@@ -429,6 +436,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             {
                 assert(arr.arrayType == JsonNodeType_Object);
                 JObject* node = PushType(tempArena, JObject);
+                AssertAligned(node, alignof(JObject));
                 *node = ParseJObject(tokenizer, arena);
                 numberOfElements += 1;
                 break;
@@ -437,6 +445,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             {
                 assert(arr.arrayType == JsonNodeType_Array);
                 JArray* node = PushType(tempArena, JArray);
+                AssertAligned(node, alignof(JArray));
                 *node = ParseJArray(tokenizer, arena);
                 numberOfElements += 1;
                 break;
@@ -446,6 +455,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
             {
                 assert(arr.arrayType == JsonNodeType_Boolean);
                 bool* node = PushType(tempArena, bool);
+                AssertAligned(node, alignof(bool));
                 *node = token.type == JsonTokenType_True ? true : false;
                 numberOfElements += 1;
                 break;
@@ -460,6 +470,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     arr.length = numberOfElements;
     ArenaSetAlignment(arena, elementAlignment);
     arr.values = PushArray(arena, u8, dataToCopy);
+    AssertAligned(arr.values, elementAlignment);
     memcpy_s(arr.values, dataToCopy, startPos, dataToCopy);
     EndTempMemory(&block);
     return arr;

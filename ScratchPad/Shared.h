@@ -34,3 +34,5 @@ struct StringLit
 
 #define InvalidCodePath assert(false)
 #define NotImplemented assert(false)
+#define IsAligned(pointer, bytes) (((u64)pointer % bytes) == 0)
+#define AssertAligned(pointer, bytes) assert(IsAligned(pointer, bytes))

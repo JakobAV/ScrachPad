@@ -76,27 +76,27 @@ int main(int argc, char** argv)
     }
 
     u32 totalnlohmann = 0;
-    //nlohmann::json json;
-    //std::ifstream file; 
-    //file.open("Test.json");
-    //file >> json;
-    //for (u32 i = 0; i < 1; ++i)
-    //{
-    //    TIMED_BLOCK(Processnlohmann, (char*)"Processnlohmann");
-    //    nlohmann::json fairyArray = json["enemyFairy"];
-    //    nlohmann::json collectibleArray = json["collectible"];
-    //    nlohmann::json tilesArray = json["tile"];
-    //    nlohmann::json spriteDecorArray = json["spriteDecor"];
-    //    totalnlohmann += SumPosnlohmannArray(fairyArray);
-    //    totalnlohmann += SumPosnlohmannArray(collectibleArray);
-    //    totalnlohmann += SumPosnlohmannArray(tilesArray);
-    //    totalnlohmann += SumPosnlohmannArray(spriteDecorArray);
-    //    nlohmann::json numbers = json["Untagged"];
-    //    for(auto& num : numbers)
-    //    {
-    //        totalnlohmann += (u32)num;
-    //    }
-    //}
+    nlohmann::json json;
+    std::ifstream file; 
+    file.open("Test.json");
+    file >> json;
+    for (u32 i = 0; i < 1; ++i)
+    {
+        TIMED_BLOCK(Processnlohmann, (char*)"Processnlohmann");
+        nlohmann::json fairyArray = json["enemyFairy"];
+        nlohmann::json collectibleArray = json["collectible"];
+        nlohmann::json tilesArray = json["tile"];
+        nlohmann::json spriteDecorArray = json["spriteDecor"];
+        totalnlohmann += SumPosnlohmannArray(fairyArray);
+        totalnlohmann += SumPosnlohmannArray(collectibleArray);
+        totalnlohmann += SumPosnlohmannArray(tilesArray);
+        totalnlohmann += SumPosnlohmannArray(spriteDecorArray);
+        nlohmann::json numbers = json["Untagged"];
+        for(auto& num : numbers)
+        {
+            totalnlohmann += (u32)num;
+        }
+    }
     printf("JJson: %u\nnlohmann: %u\n", totalJJson, totalnlohmann);
     EndDebugFrame();
 }
