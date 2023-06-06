@@ -310,7 +310,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
     }
     MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
-    ArenaSetAlignment(tempArena, sizeof(JsonNode));
+    ArenaSetAlignment(tempArena, alignof(JsonNode));
     ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
     u32 numberOfNodes = 0;
@@ -339,7 +339,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
         }
     }
     obj.length = numberOfNodes;
-    ArenaSetAlignment(arena, sizeof(JsonNode));
+    ArenaSetAlignment(arena, alignof(JsonNode));
     obj.values = PushArray(arena, JsonNode, numberOfNodes);
     memcpy_s(obj.values, numberOfNodes * sizeof(JsonNode), startPos, numberOfNodes * sizeof(JsonNode));
     EndTempMemory(&block);
@@ -351,6 +351,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     JArray arr = {};
     Token peek = PeekToken(tokenizer);
     u32 elementSize = 0;
+    u32 elementAlignment = 0;
     u32 numberOfElements = 0;
     arr.arrayType = JsonNodeType_Null;
     switch (peek.type)
@@ -358,23 +359,28 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
         case JsonTokenType_String:
             arr.arrayType = JsonNodeType_String;
             elementSize = sizeof(StringLit);
+            elementAlignment = alignof(StringLit);
             break;
         case JsonTokenType_Number:
             arr.arrayType = JsonNodeType_Number;
             elementSize = sizeof(f64);
+            elementAlignment = alignof(f64);
             break;
         case JsonTokenType_OpenBrace:
             arr.arrayType = JsonNodeType_Object;
             elementSize = sizeof(JObject);
+            elementAlignment = alignof(JObject);
             break;
         case JsonTokenType_OpenBracket:
             arr.arrayType = JsonNodeType_Array;
             elementSize = sizeof(JArray);
+            elementAlignment = alignof(JArray);
             break;
         case JsonTokenType_True:
         case JsonTokenType_False:
             arr.arrayType = JsonNodeType_Boolean;
             elementSize = sizeof(bool);
+            elementAlignment = alignof(bool);
             break;
         case JsonTokenType_CloseBracket:
             // Empty array
@@ -389,7 +395,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
 
     MemoryArena* tempArena = GetScratchArena();
     TempMemory block = BeginTempMemory(tempArena);
-    ArenaSetAlignment(tempArena, elementSize);
+    ArenaSetAlignment(tempArena, elementAlignment);
     ArenaPushAlignment(tempArena);
     u8* startPos = ArenaGetCurrentPos(tempArena);
     bool endOfObject = false;
@@ -452,7 +458,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
     }
     u32 dataToCopy = numberOfElements * elementSize;
     arr.length = numberOfElements;
-    ArenaSetAlignment(arena, elementSize);
+    ArenaSetAlignment(arena, elementAlignment);
     arr.values = PushArray(arena, u8, dataToCopy);
     memcpy_s(arr.values, dataToCopy, startPos, dataToCopy);
     EndTempMemory(&block);
