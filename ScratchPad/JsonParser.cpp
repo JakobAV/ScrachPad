@@ -35,10 +35,19 @@ struct Token
     u32 length;
 };
 
+#define ByteSignature(A, B, C, D) ((A) | (B) << 8 | (C) << 16 | (D) << 24)
+#define ByteSignaturesMatch(A, B) (*(u32*)(A) == (B))
+enum TokenSignatures
+{
+    TokenSignatures_alse = ByteSignature('a', 'l', 's', 'e'),
+    TokenSignatures_null = ByteSignature('n', 'u', 'l', 'l'),
+    TokenSignatures_true = ByteSignature('t', 'r', 'u', 'e'),
+};
+
 JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena);
 JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena);
 StringLit ParseString(Token token, Tokenizer* tokenizer, MemoryArena* arena);
-f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena);
+f64 ParseNumber(Token token);
 JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* arena);
 
 bool IsNumber(u8 c)
@@ -83,7 +92,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         case EOF: { token.type = JsonTokenType_EndOfFile; } break;
         case 't':
         {
-            if (tokenizer.at[0] == 'r' && tokenizer.at[1] == 'u' && tokenizer.at[2] == 'e')
+            if (ByteSignaturesMatch(tokenizer.at-1, TokenSignatures_true))
             {
                 token.type = JsonTokenType_True;
                 tokenizer.at += 3;
@@ -95,7 +104,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         } break;
         case 'f':
         {
-            if (tokenizer.at[0] == 'a' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 's' && tokenizer.at[3] == 'e')
+            if (ByteSignaturesMatch(tokenizer.at, TokenSignatures_alse))
             {
                 token.type = JsonTokenType_False;
                 tokenizer.at += 4;
@@ -107,7 +116,7 @@ Token GetToken(Tokenizer* tokenizerPtr)
         } break;
         case 'n':
         {
-            if (tokenizer.at[0] == 'u' && tokenizer.at[1] == 'l' && tokenizer.at[2] == 'l')
+            if (ByteSignaturesMatch(tokenizer.at-1, TokenSignatures_null))
             {
                 token.type = JsonTokenType_Null;
                 tokenizer.at += 3;
@@ -149,6 +158,25 @@ Token GetToken(Tokenizer* tokenizerPtr)
                     ++tokenizer.at;
                     c = *tokenizer.at;
                 }
+                if (c == 'e' || c == 'E')
+                {
+                    ++token.length;
+                    ++tokenizer.at;
+                    c = *tokenizer.at;
+                    if(c == '-' || c == '+')
+                    {
+                        ++token.length;
+                        ++tokenizer.at;
+                        c = *tokenizer.at;
+                    }
+                    assert(IsNumber(c));
+                    while (IsNumber(c))
+                    {
+                        ++token.length;
+                        ++tokenizer.at;
+                        c = *tokenizer.at;
+                    }
+                }
             }
             else
             {
@@ -178,7 +206,7 @@ u32 HashString(const char * s)
 {
     u32 hash = 0;
 
-    for(; *s; ++s)
+    for (; *s; ++s)
     {
         hash += *s;
         hash += (hash << 10);
@@ -208,10 +236,8 @@ inline u8 CharToNumber(u8 c)
     return c - '0';
 }
 
-f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
+f64 ParseNumber(Token token)
 {
-    tokenizer;
-    arena;
     f64 number;
 #if 1
     assert(token.type == JsonTokenType_Number);
@@ -219,8 +245,14 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     u64 baseNumber = 0;
     f64 fraction = 0;
     u32 fractionNumber = 0;
+    s32 exponentFrom = -1;
     for (s32 i = isNegative ? 1:0; i < (s32)token.length; ++i)
     {
+        if(token.data[i] == 'e' || token.data[i] == 'E')
+        {
+            exponentFrom = ++i;
+            break;
+        }
         if (fractionNumber > 0)
         {
             fraction *= 10;
@@ -239,9 +271,30 @@ f64 ParseNumber(Token token, Tokenizer* tokenizer, MemoryArena* arena)
     }
     fraction *= pow(0.1, fractionNumber-1);
     number = baseNumber + fraction;
-    if(isNegative)
+    if (isNegative)
     {
         number = -number;
+    }
+    if(exponentFrom != -1)
+    {
+        s32 exponentNumber = 0;
+        bool isNegativeExponent = token.data[exponentFrom] == '-';
+        if(isNegativeExponent || token.data[exponentFrom] == '+')
+        {
+            // TODO: experiment with returnin 0 if the negative exponent is to... large?
+            ++exponentFrom;
+        }
+        for (s32 i = exponentFrom; i < (s32)token.length; ++i)
+        {
+            exponentNumber *= 10;
+            exponentNumber += CharToNumber(token.data[i]);
+        }
+        if(isNegativeExponent)
+        {
+            exponentNumber = -exponentNumber;
+        }
+        f64 multiplier = pow(10, exponentNumber);
+        number *= multiplier;
     }
 #else
     // Slower, but probably more correct
@@ -271,7 +324,7 @@ JsonNode ParseJsonNode(Token stringToken, Tokenizer* tokenizer, MemoryArena* are
             break;
         case JsonTokenType_Number:
             node.type = JsonNodeType_Number;
-            node.number = ParseNumber(token, tokenizer, arena);
+            node.number = ParseNumber(token);
             break;
         case JsonTokenType_OpenBrace:
             node.type = JsonNodeType_Object;
@@ -300,7 +353,7 @@ JObject ParseJObject(Tokenizer* tokenizer, MemoryArena* arena)
 {
     JObject obj = {};
     Token peek = PeekToken(tokenizer);
-    if(peek.type == JsonTokenType_CloseBrace)
+    if (peek.type == JsonTokenType_CloseBrace)
     {
         // Empty object
         GetToken(tokenizer);
@@ -428,7 +481,7 @@ JArray ParseJArray(Tokenizer* tokenizer, MemoryArena* arena)
                 assert(arr.arrayType == JsonNodeType_Number);
                 f64* node = PushType(tempArena, f64);
                 AssertAligned(node, alignof(f64));
-                *node = ParseNumber(token, tokenizer, arena);
+                *node = ParseNumber(token);
                 numberOfElements += 1;
                 break;
             }
@@ -521,7 +574,7 @@ JsonDocument CreateManagedJsonDocument(u8* fileData, u32 length)
 
 void FreeJsonDocument(JsonDocument doc)
 {
-    if(doc.arena)
+    if (doc.arena)
     {
         FreeArena(doc.arena);
     }
