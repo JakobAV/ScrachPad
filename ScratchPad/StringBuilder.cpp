@@ -284,10 +284,23 @@ StringBuilder SubString(const StringBuilder* stringBuilder, StringBuilderIndex s
     return result;
 }
 
+
+StringBuilderIndex IndexOfStart(const StringBuilder* stringBuilder)
+{
+    StringBuilderIndex result = { stringBuilder->first, (s32)stringBuilder->first->startIndex };
+    return result;
+}
+
+StringBuilderIndex IndexOfEnd(const StringBuilder* stringBuilder)
+{
+    StringBuilderIndex result = { stringBuilder->last, (s32)(stringBuilder->last->startIndex + stringBuilder->last->length) };
+    return result;
+}
+
 StringBuilder* Split(const StringBuilder* stringBuilder, const char* str, u32 length, u32* splitNum, MemoryArena* arena)
 {
     StringBuilder* result = nullptr;
-    StringBuilderIndex start = { stringBuilder->first, (s32)stringBuilder->first->startIndex };
+    StringBuilderIndex start = IndexOfStart(stringBuilder);
 
     StringBuilderIndex index = IndexOf(stringBuilder, str, length, start);
     if (index.index == -1)
@@ -298,6 +311,7 @@ StringBuilder* Split(const StringBuilder* stringBuilder, const char* str, u32 le
 
     *splitNum = 2;
 
+    ArenaSetAlignment(arena, alignof(StringBuilder));
     result = PushType(arena, StringBuilder);
     *result = SubString(stringBuilder, start, index);
     while (true)
@@ -313,7 +327,7 @@ StringBuilder* Split(const StringBuilder* stringBuilder, const char* str, u32 le
         *splitNum += 1;
         *PushType(arena, StringBuilder) = SubString(stringBuilder, start, index);
     }
-    index = { stringBuilder->last, (s32)(stringBuilder->last->startIndex + stringBuilder->last->length) };
+    index = IndexOfEnd(stringBuilder);
     *PushType(arena, StringBuilder) = SubString(stringBuilder, start, index);
     return result;
 }

@@ -35,6 +35,9 @@ void Prepend(StringBuilder* stringBuilder, const char* str, u32 length);
 void Prepend(StringBuilder* stringBuilder, StringLit str);
 void Prepend(StringBuilder* stringBuilder, const StringBuilder* str);
 
+StringBuilderIndex IndexOfStart(const StringBuilder* stringBuilder);
+StringBuilderIndex IndexOfEnd(const StringBuilder* stringBuilder);
+
 StringBuilderIndex IndexOf(const StringBuilder* stringBuilder, const char* str, u32 length, StringBuilderIndex startFrom = {});
 StringBuilderIndex IndexOf(const StringBuilder* stringBuilder, StringLit str, StringBuilderIndex startFrom = {});
 
