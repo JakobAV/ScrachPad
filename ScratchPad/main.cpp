@@ -63,8 +63,20 @@ int main(int argc, char** argv)
         Prepend(builder, STR_LIT("I want to say: "));
         Prepend(builder, STR_LIT("First "));
         Append(builder, STR_LIT(" -END-"));
+        StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
+        StringBuilderIndex endIndex =IndexOf(builder, STR_LIT("D-"));
+        StringBuilder subString = SubString(builder, index, endIndex);
+        u32 splitCount = 0;
+        StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
         StringLit str = BuildString(builder, GetScratchArena());
+        StringLit str2 = BuildString(&subString, GetScratchArena());
 
         printf("    print: %s\n", str.text);
+        printf("    print: %s\n", str2.text);
+        for(u32 i = 0; i < splitCount; ++i)
+        {
+            StringLit splitStr = BuildString(split + i, GetScratchArena());
+            printf("    print: %s\n", splitStr.text);
+        }
     }
 }
