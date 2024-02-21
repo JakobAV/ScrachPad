@@ -92,8 +92,12 @@ void Append(StringBuilder* stringBuilder, const char* str, u32 length)
     u32 remainder = ArrayCount(current->data) - destIndex;
     if (length > remainder)
     {
-        // TODO: Get new chunk and split string accross them
-        NotImplemented;
+        StringBuilderChunk* newChunk = GetFreeChunk();
+        current->nextChunk = newChunk;
+        stringBuilder->last = newChunk;
+        u32 leftToAppend = length - remainder;
+        Append(stringBuilder, str + remainder, leftToAppend);
+        length = remainder;
     }
     char* dest = current->data + destIndex;
     memcpy_s(dest, remainder, str, length);
@@ -127,6 +131,7 @@ void Prepend(StringBuilder* stringBuilder, const char* str, u32 length)
         u32 leftToPrepend = length - remainder;
         newChunk->startIndex = ArrayCount(newChunk->data);
         Prepend(stringBuilder, str, leftToPrepend);
+        str += leftToPrepend;
         destIndex = 0;
         length = remainder;
     }

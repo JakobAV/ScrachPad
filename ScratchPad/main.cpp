@@ -95,8 +95,10 @@ int main(int argc, char** argv)
         Prepend(builder, STR_LIT("First "));
         Append(builder, STR_LIT(" -END-"));
         Prepend(builder, STR_LIT("-START- "));
+        Append(builder, STR_LIT(" ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss-END-"));
+        Prepend(builder, STR_LIT("-START-  ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss-END-"));
         StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
-        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("D-"));
+        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("? -END-"));
         StringBuilder subString = SubString(builder, index, endIndex);
         u32 splitCount = 0;
         StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
