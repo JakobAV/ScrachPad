@@ -9,11 +9,9 @@
 #include "FileUtilities.h"
 #include "StringBuilder.cpp"
 
-int main(int argc, char** argv)
+WorkQueueCallback(StringBuilderWork)
 {
-
-    printf("\nTest Append\n");
-    for (u32 i = 0; i < 5; ++i)
+    for (u32 i = 0; i < 16; ++i)
     {
         UseTempMemory(GetScratchArena())
         {
@@ -29,13 +27,10 @@ int main(int argc, char** argv)
             }
             StringLit str = BuildString(builder, GetScratchArena());
 
-            printf("    print: %s\n", str.text);
         }
     }
 
-    printf("\nTest Prepend\n");
-
-    for (u32 i = 0; i < 5; ++i)
+    for (u32 i = 0; i < 16; ++i)
     {
         UseTempMemory(GetScratchArena())
         {
@@ -51,11 +46,9 @@ int main(int argc, char** argv)
             }
             StringLit str = BuildString(builder, GetScratchArena());
 
-            printf("    print: %s\n", str.text);
         }
     }
 
-    printf("\nTest Complex string building\n");
     UseTempMemory(GetScratchArena())
     {
         StringBuilder stringBuilder = CreateStringBuilder();
@@ -70,19 +63,56 @@ int main(int argc, char** argv)
         Append(builder, STR_LIT(" -END-"));
         Prepend(builder, STR_LIT("-START- "));
         StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
-        StringBuilderIndex endIndex =IndexOf(builder, STR_LIT("D-"));
+        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("D-"));
         StringBuilder subString = SubString(builder, index, endIndex);
         u32 splitCount = 0;
         StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
         StringLit str = BuildString(builder, GetScratchArena());
         StringLit str2 = BuildString(&subString, GetScratchArena());
 
+    }
+}
+
+int main(int argc, char** argv)
+{
+    WorkQueue queue = {};
+    ThreadStartup startUps[16];
+    MakeQueue(&queue, ArrayCount(startUps), startUps);
+    for (u32 i = 0; i < 256; ++i)
+    {
+        AddEntry(&queue, StringBuilderWork, (void*)"Hello World!");
+    }
+    UseTempMemory(GetScratchArena())
+    {
+        StringBuilder stringBuilder = CreateStringBuilder();
+        StringBuilder* builder = &stringBuilder;
+        Append(builder, STR_LIT("Hello"));
+        Append(builder, " ", 1);
+        Append(builder, " ", 1);
+        Append(builder, STR_LIT("World"));
+        Append(builder, STR_LIT("!?"));
+        Prepend(builder, STR_LIT("I want to say: "));
+        Prepend(builder, STR_LIT("First "));
+        Append(builder, STR_LIT(" -END-"));
+        Prepend(builder, STR_LIT("-START- "));
+        StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
+        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("D-"));
+        StringBuilder subString = SubString(builder, index, endIndex);
+        u32 splitCount = 0;
+        StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
+        StringLit str = BuildString(builder, GetScratchArena());
+        StringLit str2 = BuildString(&subString, GetScratchArena());
+
+
+        CompleteAllWork(&queue);
+        printf("\n\nFinal:\n\n");
         printf("    print: %s\n", str.text);
         printf("    print: %s\n", str2.text);
-        for(u32 i = 0; i < splitCount; ++i)
+        for (u32 i = 0; i < splitCount; ++i)
         {
             StringLit splitStr = BuildString(split + i, GetScratchArena());
             printf("    print: %s\n", splitStr.text);
         }
     }
+    ExitProcess(0);
 }
