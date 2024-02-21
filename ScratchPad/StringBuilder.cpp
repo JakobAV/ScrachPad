@@ -6,7 +6,7 @@ thread_local MemoryArena* ChunkArena = CreateArena();
 StringBuilderChunk* GetFreeChunk()
 {
     StringBuilderChunk* result = ChunkFreeList;
-    if(result)
+    if (result)
     {
         ChunkFreeList = result->nextChunk;
     }
@@ -39,7 +39,7 @@ StringLit BuildString(StringBuilder* stringBuilder, MemoryArena* arena)
     text[stringBuilder->length] = '\0';
     StringBuilderChunk* current = stringBuilder->first;
     u32 destIndex = 0;
-    while(current)
+    while (current)
     {
         char* src = current->data + current->startIndex;
         assert((destIndex + current->length) <= result.length);
@@ -63,7 +63,7 @@ StringBuilder CopyStringBuilder(const StringBuilder* stringBuilder)
     result.first = GetFreeChunk();
     result.last = result.first;
     *result.first = *current;
-    while(current->nextChunk)
+    while (current->nextChunk)
     {
         result.last->nextChunk = GetFreeChunk();
         result.last = result.last->nextChunk;
@@ -73,30 +73,26 @@ StringBuilder CopyStringBuilder(const StringBuilder* stringBuilder)
     return result;
 }
 
-void Append(StringBuilder* stringBuilder, StringLit str)
-{
-    Append(stringBuilder, str.text, str.length);
-}
-
 void Append(StringBuilder* stringBuilder, const char* str, u32 length)
 {
     StringBuilderChunk* current = stringBuilder->last;
     u32 destIndex = current->startIndex + current->length;
     u32 remainder = ArrayCount(current->data) - destIndex;
-    if(length > remainder)
+    if (length > remainder)
     {
         // TODO: Get new chunk and split string accross them
         NotImplemented;
     }
-    else
-    {
-        char* dest = current->data + destIndex;
-        memcpy_s(dest, remainder, str, length);
-    }
+    char* dest = current->data + destIndex;
+    memcpy_s(dest, remainder, str, length);
     stringBuilder->length += length;
     current->length += length;
 }
 
+void Append(StringBuilder* stringBuilder, StringLit str)
+{
+    Append(stringBuilder, str.text, str.length);
+}
 
 void Append(StringBuilder* stringBuilder, const StringBuilder* str)
 {
@@ -104,4 +100,40 @@ void Append(StringBuilder* stringBuilder, const StringBuilder* str)
     stringBuilder->length += str->length;
     stringBuilder->last->nextChunk = copy.first;
     stringBuilder->last = copy.last;
+}
+
+void Prepend(StringBuilder* stringBuilder, const char* str, u32 length)
+{
+    StringBuilderChunk* current = stringBuilder->first;
+    u32 destIndex = current->startIndex - length;
+    u32 remainder = current->startIndex;
+    if (length > remainder)
+    {
+        StringBuilderChunk* newChunk = GetFreeChunk();
+        newChunk->nextChunk = stringBuilder->first;
+        stringBuilder->first = newChunk;
+        u32 leftToPrepend = length - remainder;
+        newChunk->startIndex = ArrayCount(newChunk->data);
+        Prepend(stringBuilder, str, leftToPrepend);
+        destIndex = 0;
+        length = remainder;
+    }
+    char* dest = current->data + destIndex;
+    memcpy_s(dest, remainder, str, length);
+    current->length += length;
+    current->startIndex -= length;
+    stringBuilder->length += length;
+}
+
+void Prepend(StringBuilder* stringBuilder, StringLit str)
+{
+    Prepend(stringBuilder, str.text, str.length);
+}
+
+void Prepend(StringBuilder* stringBuilder, const StringBuilder* str)
+{
+    StringBuilder copy = CopyStringBuilder(str);
+    stringBuilder->length += str->length;
+    copy.last->nextChunk = stringBuilder->first;
+    stringBuilder->first = copy.first;
 }
