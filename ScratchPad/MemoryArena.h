@@ -26,7 +26,7 @@ struct TempMemory
 #define PushArrayAligned(arena, type, count, aligment) (type*)ArenaPushWithAlignment(arena, sizeof(type) * count, aligment)
 #define PopType(arena, type) ArenaPop(arena, sizeof(type))
 #define PopArray(arena, type, count) ArenaPop(arena, sizeof(type) * count)
-#define UseTempMemory(arena) for (TempMemory _block_ = BeginTempMemory(arena); _block_.arena!=nullptr; EndTempMemory(&_block_))
+#define UseTempMemory(in_arena) for (TempMemory _block_ = BeginTempMemory(in_arena); _block_.arena!=nullptr; EndTempMemory(&_block_))
 
 MemoryArena* GetScratchArena();
 MemoryArena* CreateArena(u64 reserveSize = GB(4), u32 decommitThresholdInPageSizes = 4);
