@@ -78,10 +78,10 @@ int main(int argc, char** argv)
     WorkQueue queue = {};
     ThreadStartup startUps[16];
     MakeQueue(&queue, ArrayCount(startUps), startUps);
-    for (u32 i = 0; i < 256; ++i)
-    {
-        AddEntry(&queue, StringBuilderWork, (void*)"Hello World!");
-    }
+//    for (u32 i = 0; i < 256; ++i)
+//    {
+//        AddEntry(&queue, StringBuilderWork, (void*)"Hello World!");
+//    }
     UseTempMemory(GetScratchArena())
     {
         StringBuilder stringBuilder = CreateStringBuilder();
@@ -95,17 +95,17 @@ int main(int argc, char** argv)
         Prepend(builder, STR_LIT("First "));
         Append(builder, STR_LIT(" -END-"));
         Prepend(builder, STR_LIT("-START- "));
-        Append(builder, STR_LIT(" ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss-END-"));
-        Prepend(builder, STR_LIT("-START-  ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss-END-"));
         StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
         StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("? -END-"));
         StringBuilder subString = SubString(builder, index, endIndex);
+        Insert(builder, index, STR_LIT("hejsanasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"));
+        //Insert(builder, endIndex, builder);
+
         u32 splitCount = 0;
         StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
+
         StringLit str = BuildString(builder, GetScratchArena());
         StringLit str2 = BuildString(&subString, GetScratchArena());
-
-
         CompleteAllWork(&queue);
         printf("\n\nFinal:\n\n");
         printf("    print: %s\n", str.text);

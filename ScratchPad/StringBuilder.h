@@ -35,6 +35,10 @@ void Prepend(StringBuilder* stringBuilder, const char* str, u32 length);
 void Prepend(StringBuilder* stringBuilder, StringLit str);
 void Prepend(StringBuilder* stringBuilder, const StringBuilder* str);
 
+void Insert(StringBuilder* stringBuilder, StringBuilderIndex insertIndex, const char* str, u32 length);
+void Insert(StringBuilder* stringBuilder, StringBuilderIndex insertIndex, StringLit str);
+void Insert(StringBuilder* stringBuilder, StringBuilderIndex insertIndex, const StringBuilder* str);
+
 StringBuilderIndex IndexOfStart(const StringBuilder* stringBuilder);
 StringBuilderIndex IndexOfEnd(const StringBuilder* stringBuilder);
 
@@ -45,3 +49,5 @@ StringBuilder SubString(const StringBuilder* stringBuilder, StringBuilderIndex s
 
 StringBuilder* Split(const StringBuilder* stringBuilder, const char* str, u32 length, u32* splitNum, MemoryArena* arena);
 StringBuilder* Split(const StringBuilder* stringBuilder, StringLit str, u32* splitNum, MemoryArena* arena);
+
+StringBuilder Slice(StringBuilder* stringBuilder, StringBuilderIndex sliceAt);
