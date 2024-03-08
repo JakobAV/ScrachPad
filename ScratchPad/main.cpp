@@ -1,120 +1,122 @@
 //#include "D3D11.cpp"
-#include "JsonParser.cpp"
+//#include "JsonParser.cpp"
 //#include "Dictionary.cpp"
 //#include "SortTiming.cpp"
 #include "MemoryArena.cpp"
-#include "JsonWrapper.cpp"
-#include "DebugUtils.cpp"
-#include "WorkQueue.cpp"
+//#include "JsonWrapper.cpp"
+//#include "DebugUtils.cpp"
+//#include "WorkQueue.cpp"
 #include "FileUtilities.h"
 #include "StringBuilder.cpp"
 
-WorkQueueCallback(StringBuilderWork)
+HANDLE hStdin;
+DWORD fdwSaveOldMode;
+
+void PrintStringBuilder(StringBuilder* stringBuilder)
 {
-    for (u32 i = 0; i < 16; ++i)
+    StringBuilderChunk* currentChunk = stringBuilder->first;
+    while (currentChunk)
     {
-        UseTempMemory(GetScratchArena())
-        {
-            StringBuilder stringBuilder = CreateStringBuilder();
-            StringBuilder* builder = &stringBuilder;
-            Append(builder, STR_LIT("Hello"));
-            Append(builder, " ", 1);
-            Append(builder, STR_LIT("World"));
-            Append(builder, STR_LIT("!?"));
-            for (u32 j = 0; j < i; ++j)
-            {
-                Append(builder, builder);
-            }
-            StringLit str = BuildString(builder, GetScratchArena());
-
-        }
-    }
-
-    for (u32 i = 0; i < 16; ++i)
-    {
-        UseTempMemory(GetScratchArena())
-        {
-            StringBuilder stringBuilder = CreateStringBuilder();
-            StringBuilder* builder = &stringBuilder;
-            Prepend(builder, STR_LIT("Hello"));
-            Prepend(builder, " ", 1);
-            Prepend(builder, STR_LIT("World"));
-            Prepend(builder, STR_LIT("!?"));
-            for (u32 j = 0; j < i; ++j)
-            {
-                Prepend(builder, builder);
-            }
-            StringLit str = BuildString(builder, GetScratchArena());
-
-        }
-    }
-
-    UseTempMemory(GetScratchArena())
-    {
-        StringBuilder stringBuilder = CreateStringBuilder();
-        StringBuilder* builder = &stringBuilder;
-        Append(builder, STR_LIT("Hello"));
-        Append(builder, " ", 1);
-        Append(builder, " ", 1);
-        Append(builder, STR_LIT("World"));
-        Append(builder, STR_LIT("!?"));
-        Prepend(builder, STR_LIT("I want to say: "));
-        Prepend(builder, STR_LIT("First "));
-        Append(builder, STR_LIT(" -END-"));
-        Prepend(builder, STR_LIT("-START- "));
-        StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
-        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("D-"));
-        StringBuilder subString = SubString(builder, index, endIndex);
-        u32 splitCount = 0;
-        StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
-        StringLit str = BuildString(builder, GetScratchArena());
-        StringLit str2 = BuildString(&subString, GetScratchArena());
-
+        printf("%*s", currentChunk->length, currentChunk->data + currentChunk->startIndex);
+        currentChunk = currentChunk->nextChunk;
     }
 }
 
 int main(int argc, char** argv)
 {
-    WorkQueue queue = {};
-    ThreadStartup startUps[16];
-    MakeQueue(&queue, ArrayCount(startUps), startUps);
-//    for (u32 i = 0; i < 256; ++i)
-//    {
-//        AddEntry(&queue, StringBuilderWork, (void*)"Hello World!");
-//    }
-    UseTempMemory(GetScratchArena())
+    DWORD cNumRead, fdwMode, i;
+    INPUT_RECORD irInBuf[128];
+    int counter = 0;
+
+    // Get the standard input handle.
+
+    hStdin = GetStdHandle(STD_INPUT_HANDLE);
+
+    // Save the current input mode, to be restored on exit.
+
+    GetConsoleMode(hStdin, &fdwSaveOldMode);
+
+    // Enable the window and mouse input events.
+
+    fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
+    SetConsoleMode(hStdin, fdwMode);
+
+    StringBuilder stringBuilder = CreateStringBuilder();
+    StringBuilder* builder = &stringBuilder;
+    StringBuilderIndex at = IndexOfStart(builder);
+    bool running = true;
+    while (running)
     {
-        StringBuilder stringBuilder = CreateStringBuilder();
-        StringBuilder* builder = &stringBuilder;
-        Append(builder, STR_LIT("Hello"));
-        Append(builder, " ", 1);
-        Append(builder, " ", 1);
-        Append(builder, STR_LIT("World"));
-        Append(builder, STR_LIT("!?"));
-        Prepend(builder, STR_LIT("I want to say: "));
-        Prepend(builder, STR_LIT("First "));
-        Append(builder, STR_LIT(" -END-"));
-        Prepend(builder, STR_LIT("-START- "));
-        StringBuilderIndex index = IndexOf(builder, STR_LIT("!"));
-        StringBuilderIndex endIndex = IndexOf(builder, STR_LIT("? -END-"));
-        StringBuilder subString = SubString(builder, index, endIndex);
-        Insert(builder, index, STR_LIT("hejsanasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"));
-        //Insert(builder, endIndex, builder);
+        // Wait for the events.
 
-        u32 splitCount = 0;
-        StringBuilder* split = Split(builder, STR_LIT(" "), &splitCount, GetScratchArena());
-
-        StringLit str = BuildString(builder, GetScratchArena());
-        StringLit str2 = BuildString(&subString, GetScratchArena());
-        CompleteAllWork(&queue);
-        printf("\n\nFinal:\n\n");
-        printf("    print: %s\n", str.text);
-        printf("    print: %s\n", str2.text);
-        for (u32 i = 0; i < splitCount; ++i)
+        if (!ReadConsoleInput(
+            hStdin,      // input buffer handle
+            irInBuf,     // buffer to read into
+            128,         // size of read buffer
+            &cNumRead)) // number of records read
         {
-            StringLit splitStr = BuildString(split + i, GetScratchArena());
-            printf("    print: %s\n", splitStr.text);
+
         }
+
+        // Dispatch the events to the appropriate handler.
+
+        for (i = 0; i < cNumRead; i++)
+        {
+            switch (irInBuf[i].EventType)
+            {
+                case KEY_EVENT: // keyboard input
+                {
+                    KEY_EVENT_RECORD* kEvent = &irInBuf[i].Event.KeyEvent;
+                    if (kEvent->bKeyDown && kEvent->uChar.AsciiChar != '\0')
+                    {
+                        if (kEvent->uChar.AsciiChar == '\r')
+                        {
+                            kEvent->uChar.AsciiChar = '\n';
+                        }
+                        for (size_t r = 0; r < kEvent->wRepeatCount; ++r)
+                        {
+                            Insert(builder, at, (const char*)&(kEvent->uChar.AsciiChar), 1);
+                            IncrementIndex(&at, 1);
+                        }
+                    }
+                    else
+                    {
+                        if (kEvent->bKeyDown)
+                        {
+                            switch (kEvent->wVirtualKeyCode)
+                            {
+                            case VK_LEFT:
+                                DecrementIndex(&at, kEvent->wRepeatCount);
+                                break;
+                            case VK_RIGHT:
+                                IncrementIndex(&at, kEvent->wRepeatCount);
+                                break;
+                            default:
+                                break;
+                            }
+						}
+                    }
+                    break;
+                }
+
+                case MOUSE_EVENT: // mouse input
+                    break;
+
+                case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
+                    break;
+
+                case FOCUS_EVENT:  // disregard focus events
+
+                case MENU_EVENT:   // disregard menu events
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        system("cls");
+        PrintStringBuilder(builder);
     }
-    ExitProcess(0);
+    // Restore input mode on exit.
+    SetConsoleMode(hStdin, fdwSaveOldMode);
 }

@@ -159,8 +159,8 @@ void Prepend(StringBuilder* stringBuilder, const StringBuilder* str)
 void Insert(StringBuilder* stringBuilder, StringBuilderIndex insertIndex, const char* str, u32 length)
 {
 	assert(insertIndex.chunk);
-	assert(insertIndex.index < (s32)(insertIndex.chunk->startIndex + insertIndex.chunk->length));
-	if (insertIndex.chunk->nextChunk == stringBuilder->last && insertIndex.index == stringBuilder->last->length)
+	assert(insertIndex.index <= (s32)(insertIndex.chunk->startIndex + insertIndex.chunk->length));
+	if (insertIndex.chunk == stringBuilder->last && insertIndex.index == stringBuilder->last->length)
 	{
 		Append(stringBuilder, str, length);
 	}
@@ -239,11 +239,46 @@ bool IncrementIndex(StringBuilderIndex* index, u32 incrementAmount = 1)
 			result = true;
 			break;
 		}
+		else if (current->nextChunk == nullptr && realEndOfArray == newIndex)
+		{
+			index->chunk = current;
+			index->index = newIndex;
+			result = true;
+			break;
+		}
 		amountIncremented += realEndOfArray - currentIndex;
 		current = current->nextChunk;
 		if (current)
 		{
 			currentIndex = current->startIndex;
+		}
+	}
+	return result;
+}
+
+bool DecrementIndex(StringBuilderIndex* index, u32 decrementAmount = 1)
+{
+	assert(index->chunk);
+	bool result = false;
+	StringBuilderChunk* current = index->chunk;
+	s32 currentIndex = index->index;
+	s32 amountDecremented = 0;
+	while (current)
+	{
+		s32 startOfArray = current->startIndex;
+		s32 newIndex = currentIndex - decrementAmount + amountDecremented;
+		if (newIndex >= startOfArray)
+		{
+			index->chunk = current;
+			index->index = newIndex;
+			result = true;
+			break;
+		}
+		amountDecremented += currentIndex - newIndex;
+		current = current->nextChunk;
+		if (current)
+		{
+			currentIndex = current->startIndex + current->length - 1;
 		}
 	}
 	return result;
