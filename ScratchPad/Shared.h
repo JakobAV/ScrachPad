@@ -28,9 +28,15 @@ struct StringLit
 #define GB(n) (((u64)n) << 30)
 #define TB(n) (((u64)n) << 40)
 
+#ifndef min
 #define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a)
+#endif
+#ifndef clamp
 #define clamp(v, minimum, maximum) (max(min(v, minimum), maximum))
+#endif
 
 #define InvalidCodePath assert(false)
 #define NotImplemented assert(false)
